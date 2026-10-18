@@ -47,13 +47,14 @@ button:active{background:var(--jade);color:var(--bg)}
 </head>
 <body>
 <canvas id="c"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <canvas id="fx" style="position:fixed;inset:0;pointer-events:none"></canvas>
 <div class="p" id="card"></div>
 <div class="p" id="st"></div>
 <div class="p" id="q"></div>
 <div class="p" id="arrow"><div id="ai">▲</div><div id="ad"></div></div>
 <div class="p" id="fu"></div>
-<div class="p" id="go"><button id="daily">每日挑戰</button><button id="jr">手札</button><button id="yard">練製</button><button id="mu">音效：開</button><button id="sail">解纜・前往下一顆星</button></div>
+<div class="p" id="go"><button id="daily">每日挑戰</button><button id="jr">手札</button><button id="nv">小說</button><button id="yard">練製</button><button id="mu">音效：開</button><button id="sail">解纜・前往下一顆星</button></div>
 <div id="mei"><button id="mb" aria-label="魅兒導覽">🧚</button><div class="p" id="mt"></div></div>
 <div class="p" id="dlg"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -149,7 +150,7 @@ function lvl(){let i=0;while(S.xp>=TH[i+1])i++;return i}
 function ui(){
   if(!info)return;const l=lvl();
   $('card').innerHTML='<b>'+(info.name||'')+'</b> <span>S-'+String(seed).padStart(4,'0')+'</span><br><span>靈氣</span>'+N.aura[info.aura]+'・'+N.land[info.land]+'<br><span>勢力</span>'+N.power[info.power]+'<br><span>危機</span>'+N.crisis[info.crisis]+'<br><span>機緣</span>'+N.boon[info.boon]+'・'+N.sky[info.sky];
-  $('st').innerHTML=(S.hero?'<b>'+esc(S.hero.name)+'</b><br>':'')+'靈石 '+S.stones+'<br>吸星劍・'+SW[lvl()>>1]+'<br>劍刃 '+GN[S.wpn||0]+'・護具 '+GN[S.arm||0]+'<br>紫焰心 '+FL[S.fl||1]+'・隊友 '+(S.party||[]).length+'/3<br>氣血 <span id="hp">'+Math.ceil(php)+'</span>/100<br>境界：'+REALM[l]+'<div id="bar"><i style="width:'+Math.min(100,(S.xp-TH[l])/(TH[l+1]-TH[l])*100)+'%"></i></div>';
+  $('st').innerHTML=(S.hero?'<b>'+esc(S.hero.name)+'</b><br>':'')+'靈石 '+S.stones+'<br>吸星劍・'+SW[(S.sw||0)]+'<br>劍刃 '+GNm(S.wpn||0)+'・護具 '+GNm(S.arm||0)+'<br>紫焰心 '+FL[S.fl||1]+'・隊友 '+(S.party||[]).length+'/3<br>氣血 <span id="hp">'+Math.ceil(php)+'</span>/100<br>境界：'+REALM[l]+'<div id="bar"><i style="width:'+Math.min(100,(S.xp-TH[l])/(TH[l+1]-TH[l])*100)+'%"></i></div>';
   $('q').innerHTML=(accepted?'委託：'+NPC[info.power][0]+'<br>':'')+'採集'+N.boon[info.boon]+' <em>'+herbs+'/5</em><br>'+CR[info.crisis][3]+' <em>'+(crFail?'失敗':(crisisN-crisisLeft)+'/'+crisisN)+'</em><span id="ct"></span>'+'<br>修復渡口 <em>'+(fixed?'完成':parts+'/3')+'</em>'+(daily?'<br>每日挑戰 <span id="dt"></span>':'')+(done?'<br>任務完成':'')+questTxt();
   const cost=fare();const pv=(()=>{const r=roll(nextSeed),a=[];if(S.comp>0)a.push('靈氣'+N.aura[r.aura]);if(S.comp>1)a.push(N.land[r.land]);if(S.comp>2)a.push(N.crisis[r.crisis]);return a.join('・')})();$('sail').textContent='解纜・'+(cost?cost+' 靈石':'免費')+(pv?'（前方：'+pv+'）':'');
 }
@@ -169,24 +170,24 @@ function alch(){let hit=0,rd=0,x=0,dir=1,zone=.5,sp=.012;const d=dlg('煉丹：�
   function next(){if(rd>=3){clearInterval(iv);const ok=hit>=2;if(ok){gain(hit*20,hit*30);qEv('alch',1)}dlg(ok?'丹成！成功 '+hit+' 次。':'丹毀了……再試一次吧。',[['好',shut]]);return}zone=.15+Math.random()*.7;sp=.012+rd*.006;d.querySelector('#fz').style.cssText='left:'+(zone-.12)*100+'%;width:24%'}
   const iv=setInterval(()=>{x+=dir*sp;if(x>1||x<0)dir*=-1;const m=d.querySelector('#fm');if(m)m.style.left=Math.max(0,Math.min(1,x))*100+'%'},16);next()}
 
-const GN=['無','凡品','精煉','上品','極品'];if(S.gear&&S.wpn===undefined){S.wpn=S.gear;delete S.gear}
+const GN=['無','凡品','精煉','上品','極品'];const GNm=l=>l<=4?GN[l]:'極品+'+(l-4);if(S.gear&&S.wpn===undefined){S.wpn=S.gear;delete S.gear}
 let AC=null,mute=false;try{mute=localStorage.getItem('fmute')=='1'}catch(e){}
 function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume()}catch(e){}}
 function snd(k){if(mute||!AC)return;try{const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime,f={ok:660,bad:170,get:880,up:1040,hurt:120}[k]||440;o.type=(k=='bad'||k=='hurt')?'sawtooth':'sine';o.frequency.value=f;if(k=='up')o.frequency.linearRampToValueAtTime(1560,t+.25);g.gain.setValueAtTime(.07,t);g.gain.exponentialRampToValueAtTime(.001,t+(k=='up'?.35:.16));o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.36)}catch(e){}}
 addEventListener('pointerdown',ac);addEventListener('keydown',ac);
 $('mu').textContent='音效：'+(mute?'關':'開');
 $('mu').onclick=()=>{mute=!mute;$('mu').textContent='音效：'+(mute?'關':'開');try{localStorage.setItem('fmute',mute?'1':'0')}catch(e){}ac();snd('ok')};
-function forge(){dlg('<b>煉器</b>　靈石 '+S.stones+'<br>紫焰心「'+FL[S.fl||1]+'」：金區更寬、可能煉出更高品階。<br>要煉製哪一件？每次花 30 靈石。<br><span style="color:var(--dim)">武器：'+GN[S.wpn||0]+'（自動射擊更強）<br>護具：'+GN[S.arm||0]+'（受到的傷害更低）</span>',[['武器',()=>forgeGo('wpn')],['護具',()=>forgeGo('arm')],['紫焰心進化',evolve],['離開',shut]])}
+function forge(){dlg('<b>煉器</b>　靈石 '+S.stones+'<br>紫焰心「'+FL[S.fl||1]+'」：金區更寬、可能煉出更高品階。<br>要煉製哪一件？費用 30＋10×目前等級 靈石，等級沒有上限。<br><span style="color:var(--dim)">武器：'+GNm(S.wpn||0)+'（自動射擊更強）<br>護具：'+GNm(S.arm||0)+'（受到的傷害更低）</span>',[['武器',()=>forgeGo('wpn')],['護具',()=>forgeGo('arm')],['紫焰心進化',evolve],['離開',shut]])}
 function forgeGo(sl){
-  const nm=sl=='wpn'?'武器':'護具';
-  if(S.stones<30){dlg('煉器需要 30 靈石，目前只有 '+S.stones+'。',[['好',shut]]);return}
-  S.stones-=30;save();ui();
+  const nm=sl=='wpn'?'武器':sl=='arm'?'護具':'吸星劍',sv=S.sw||0,cost=sl=='sw'?80*(sv+1):30+10*(S[sl]||0),hb=sl=='sw'?3*(sv+1):0;if(sl=='sw'){if(sv>=4){dlg('吸星劍已臻圓滿「'+SW[4]+'」。',[['好',shut]]);return}if(lvl()<2*(sv+1)){dlg('淬煉至「'+SW[sv+1]+'」需要境界達「'+REALM[2*(sv+1)]+'」。',[['好',shut]]);return}if((S.herb||0)<hb){dlg('淬煉需要靈草 '+hb+' 份，目前 '+(S.herb||0)+'。',[['好',shut]]);return}}
+  if(S.stones<cost){dlg('需要 '+cost+' 靈石，目前只有 '+S.stones+'。',[['好',shut]]);return}
+  S.stones-=cost;S.herb=(S.herb||0)-hb;save();ui();
   let tot=0,rd=0,x=0,dir=1,zone=.5,sp=.014;const w=(info.power==3?.16:.1)+((S.fl||1)-1)*.025+(has(3)?.03:0);
-  const d=dlg('煉器：標記進入金區時按「錘煉」（共 3 錘，已花 30 靈石）'+(info.power==3?'<br><span style="color:var(--dim)">煉器世家指點：金區加寬</span>':'')+'<div id="fbar"><div id="fz"></div><div id="fm"></div></div><span id="fr"></span>',[['錘煉',()=>{const df=Math.abs(x-zone),q=df<w*.4?3:df<w?2:0;tot+=q;rd++;snd(q?'ok':'bad');d.querySelector('#fr').textContent=['落空','','良好','完美'][q]+'（'+rd+'/3）';next()}]]);
+  const d=dlg('煉器：標記進入金區時按「錘煉」（共 3 錘，已花 '+cost+' 靈石）'+(info.power==3?'<br><span style="color:var(--dim)">煉器世家指點：金區加寬</span>':'')+'<div id="fbar"><div id="fz"></div><div id="fm"></div></div><span id="fr"></span>',[['錘煉',()=>{const df=Math.abs(x-zone),q=df<w*.4?3:df<w?2:0;tot+=q;rd++;snd(q?'ok':'bad');d.querySelector('#fr').textContent=['落空','','良好','完美'][q]+'（'+rd+'/3）';next()}]]);
   function next(){
-    if(rd>=3){clearInterval(iv);let g=tot>=8?4:tot>=6?3:tot>=3?2:1;if(Math.random()<((S.fl||1)-1)*.15)g=Math.min(4,g+1);qEv(sl=='wpn'?'forgeW':'forgeA',1);
-      if(g>(S[sl]||0)){S[sl]=g;save();gain(tot*6,0);dlg('煉成「'+GN[g]+nm+'」！'+(sl=='wpn'?'自動射擊更強。':'受到的傷害更低。'),[['好',shut]])}
-      else{S.stones+=15;save();ui();dlg('煉出'+GN[g]+nm+'，不如現有的，拆解返還 15 靈石。',[['好',shut]])}
+    if(rd>=3){clearInterval(iv);let g=tot>=8?4:tot>=6?3:tot>=3?2:1;if(Math.random()<((S.fl||1)-1)*.15)g=Math.min(4,g+1);qEv(sl=='wpn'?'forgeW':sl=='arm'?'forgeA':'sword',1);
+      if(sl=='sw'){if(tot>=5){S.sw=sv+1;save();gain(tot*10,0);ui();snd('up');dlg('吸星劍淬煉成功！進入「'+SW[S.sw]+'」。',[['好',shut]])}else{S.stones+=Math.floor(cost/2);save();ui();dlg('火候不足，淬煉失敗，返還一半靈石。',[['好',shut]])}}
+      else{S[sl]=(S[sl]||0)+g;save();gain(tot*6,0);ui();dlg('煉成「'+GNm(g)+nm+'」，'+nm+'提升至 '+GNm(S[sl])+'。',[['好',shut]])}
       return}
     zone=.15+Math.random()*.7;sp=.014+rd*.007;d.querySelector('#fz').style.cssText='left:'+(zone-w)*100+'%;width:'+w*200+'%;background:var(--gold);opacity:.7'}
   const iv=setInterval(()=>{x+=dir*sp;if(x>1||x<0)dir*=-1;const m=d.querySelector('#fm');if(m)m.style.left=Math.max(0,Math.min(1,x))*100+'%'},16);next()}
@@ -203,11 +204,11 @@ function emo(e){if(!ET[e]){const c=document.createElement('canvas');c.width=c.he
 function spawn(){const pl=P.clone().applyQuaternion(planet.quaternion.clone().invert()),ax=new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).cross(pl).normalize(),pos=pl.clone().applyAxisAngle(ax,(35+Math.random()*15)/R0).setLength(R0+1.2),ev=Math.random()<(info.power==5?.8:.3)*(incT>0?.3:1),s=ev?evil():new THREE.Sprite(new THREE.SpriteMaterial({map:emo(MO[info.aura])}));if(!ev)s.scale.set(2.4,2.4,1);s.position.copy(ev?pos.clone().setLength(R0):pos);planet.add(s);mons.push({s,ev,w:new THREE.Vector3(),hp:(2+info.aura*2)*(ev?1.5:1)})}
 function die(){php=100;S.stones=Math.max(0,S.stones-30);mons.forEach(o=>planet.remove(o.s));mons=[];msg('氣血耗盡，你被送回槎上調息，損失 30 靈石。');save();ui()}
 function fight(dt){const pl=P.clone().applyQuaternion(planet.quaternion.clone().invert()),act=crisisLeft>0&&crisisLeft<crisisN&&!crFail;
-  spT+=dt;hurt-=dt;shootT-=dt;fireT-=dt;buffT-=dt;incT-=dt;spdT-=dt;atkT-=dt;partyT-=dt;if(partyT<=0){partyT=4;partyN++;if(has(0)){const t=mons.filter(o=>o.w.distanceTo(P)<24).sort((a,b)=>a.w.distanceTo(P)-b.w.distanceTo(P))[0];if(t){dmg(t,1.5+lvl()*.3);puff(t.w.clone(),1,1,.4,2)}}if(has(4)&&partyN%2==0)php=Math.min(100,php+10)}ghs=ghs.filter(g=>{g.life-=dt;if(g.life<=0){scene.remove(g.m);return false}const o=(g.b||.4)*g.life/(g.max||.28);g.m.traverse(c=>{if(c.material)c.material.opacity=o});if(g.gr)g.m.scale.setScalar(g.s0+g.gr*(1-g.life/g.max));return true});if(lvl()>=8&&fireT<=0&&mons.length){fireT=6;mons.slice().forEach(o=>dmg(o,3));msg('天火降下：星火燎原！')}if(spT>(act?3:Math.max(4,10-info.aura))&&mons.length<2+info.aura+(act?3:0)+(info.crisis==1?2:0)){spT=0;spawn()}
+  spT+=dt;hurt-=dt;shootT-=dt;fireT-=dt;buffT-=dt;incT-=dt;spdT-=dt;atkT-=dt;partyT-=dt;snapT-=dt;if(snapT<=0){snapT=20+Math.random()*20;wantSnap=true}if(partyT<=0){partyT=4;partyN++;if(has(0)){const t=mons.filter(o=>o.w.distanceTo(P)<24).sort((a,b)=>a.w.distanceTo(P)-b.w.distanceTo(P))[0];if(t){dmg(t,1.5+lvl()*.3);puff(t.w.clone(),1,1,.4,2)}}if(has(4)&&partyN%2==0)php=Math.min(100,php+10)}ghs=ghs.filter(g=>{g.life-=dt;if(g.life<=0){scene.remove(g.m);return false}const o=(g.b||.4)*g.life/(g.max||.28);g.m.traverse(c=>{if(c.material)c.material.opacity=o});if(g.gr)g.m.scale.setScalar(g.s0+g.gr*(1-g.life/g.max));return true});if((S.sw||0)>=4&&fireT<=0&&mons.length){fireT=6;mons.slice().forEach(o=>dmg(o,3));msg('天火降下：星火燎原！')}if(spT>(act?3:Math.max(4,10-info.aura))&&mons.length<2+info.aura+(act?3:0)+(info.crisis==1?2:0)){spT=0;spawn()}
   mons.forEach(o=>{const mp=o.s.position;mp.applyAxisAngle(mp.clone().cross(pl).normalize(),dt*(.022+info.aura*.003));o.s.getWorldPosition(o.w);if(o.ev)orient(o.s,pl);
     if(o.w.distanceTo(P)<1.8&&hurt<=0){hurt=.9;snd('hurt');if(shield>0)shield--;else php-=Math.max(4,12+info.aura*2-S.hull*2-(S.arm||0)*2)*(has(2)?.75:1)}});
   if(php<=0){if((S.inv&&S.inv.pill)>0){S.inv.pill--;php=100;msg('回氣丹救了你一命。');save()}else{die();return}}
-  if(shootT<=0){const tr=lvl()>>1,ls=mons.filter(o=>o.w.distanceTo(P)<24).sort((a,b)=>a.w.distanceTo(P)-b.w.distanceTo(P));if(ls.length){shootT=.65;(tr==1||tr==4?[0,1]:[0]).forEach(k=>{const t=ls[Math.min(k,ls.length-1)],m=makeBlade(tr);m.position.set(P.x+(k?.4:0),P.y+1.2,P.z);scene.add(m);bullets.push({m,t,tr})})}}
+  if(shootT<=0){const tr=(S.sw||0),ls=mons.filter(o=>o.w.distanceTo(P)<24).sort((a,b)=>a.w.distanceTo(P)-b.w.distanceTo(P));if(ls.length){shootT=.65;(tr==1||tr==4?[0,1]:[0]).forEach(k=>{const t=ls[Math.min(k,ls.length-1)],m=makeBlade(tr);m.position.set(P.x+(k?.4:0),P.y+1.2,P.z);scene.add(m);bullets.push({m,t,tr})})}}
   bullets=bullets.filter(b=>{if(!mons.includes(b.t)){scene.remove(b.m);return false}const d=b.t.w.clone().sub(b.m.position),l=d.length();
     if(l<1.4){hit(b);scene.remove(b.m);return false}
     b.m.lookAt(b.t.w);b.tt=(b.tt||0)-dt;if(b.tr>0&&b.tt<=0){if(b.tr>=2){b.tt=.03;b.m.children.forEach(c=>{const p=new THREE.Vector3();c.getWorldPosition(p);p.x+=(Math.random()-.5)*.2;p.y+=(Math.random()-.5)*.2;puff(p,b.tr,.7,.6,1.6)})}else{b.tt=b.tr>1?.025:.06;const gm=makeBlade(b.tr,true);gm.position.copy(b.m.position);gm.quaternion.copy(b.m.quaternion);scene.add(gm);ghs.push({m:gm,life:.28})}}b.m.position.add(d.multiplyScalar(Math.min(1,52*dt/l)));return true});
@@ -216,7 +217,7 @@ function fight(dt){const pl=P.clone().applyQuaternion(planet.quaternion.clone().
 function dailySeed(){const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()}
 function startDaily(){if(busy)return;daily=true;dDone=false;dT=0;build(dailySeed(),false);msg('每日挑戰：採齊靈材、化解危機、修復渡口，越快越好。當天種子全球相同。')}
 $('daily').onclick=startDaily;$('jr').onclick=()=>{if(!busy)journal()};
-function journal(){const c=document.createElement('canvas');c.width=600;c.height=800;const x=c.getContext('2d');x.fillStyle='#0d2230';x.fillRect(0,0,600,800);x.fillStyle='#7ee0c0';x.font='bold 44px serif';x.fillText((S.hero?S.hero.name+'・':'')+'歷練手札',40,80);x.fillStyle='#f1ecdc';x.font='26px serif';x.fillText('境界：'+REALM[lvl()]+'　靈石 '+S.stones,40,140);x.fillText('槎身 '+S.hull+'　帆 '+S.sail+'　羅盤 '+S.comp+'　武器 '+GN[S.wpn||0]+'　護具 '+GN[S.arm||0],40,184);
+function journal(){const c=document.createElement('canvas');c.width=600;c.height=800;const x=c.getContext('2d');x.fillStyle='#0d2230';x.fillRect(0,0,600,800);x.fillStyle='#7ee0c0';x.font='bold 44px serif';x.fillText((S.hero?S.hero.name+'・':'')+'歷練手札',40,80);x.fillStyle='#f1ecdc';x.font='26px serif';x.fillText('境界：'+REALM[lvl()]+'　靈石 '+S.stones,40,140);x.fillText('槎身 '+S.hull+'　帆 '+S.sail+'　羅盤 '+S.comp+'　武器 '+GNm(S.wpn||0)+'　護具 '+GNm(S.arm||0),40,184);
   (S.log||[]).forEach((l,i)=>{const r=roll(l.seed);x.fillText('S-'+String(l.seed).padStart(4,'0')+' '+l.name+' '+N.aura[r.aura]+'・'+N.land[r.land]+'・'+N.crisis[r.crisis],40,250+i*52)});
   x.fillStyle='#a9bcc0';x.font='22px serif';x.fillText('今日挑戰種子 '+dailySeed()+(S.dbest?'　最佳 '+S.dbest.t+' 秒':''),40,740);
   const im=new Image();im.src=c.toDataURL('image/png');im.style.cssText='width:100%;border-radius:8px;margin-top:8px';
@@ -237,7 +238,7 @@ function town(R,pw){const C=[[0xc9b38a,0x5a4a3a],[0xe8dcc0,0x2f6f66],[0xdfe6ee,0
   place(hall(3.4,1.7,C[0],C[1],pw==2||pw==5?4:3),rdir(R,.9,.96),0)}
 $('sail').onclick=()=>{
   const c=fare();if(S.stones<c){msg('魅兒：靈石不足，還差 '+(c-S.stones)+'。回星球上再採集看看。');return}
-  S.stones-=c;S.visited++;save();daily=false;build(nextSeed);
+  S.stones-=c;S.visited++;save();daily=false;writeChap(info,Object.assign({done,crisisOk:crisisLeft==0&&!crFail,fixed},EV));EV={};build(nextSeed);
 };
 
 const keys={};let drag=null,vec={x:0,y:0};
@@ -284,7 +285,7 @@ function loop(now){
   if(!busy)fight(dt);
   if(daily&&!dDone&&!busy){dT+=dt;const e=$('dt');if(e)e.textContent=dT.toFixed(1)+' 秒';
     if(done&&fixed&&(crisisLeft==0||crFail)){dDone=true;const t=+(dT+(crFail?15:0)).toFixed(1),k=String(seed);if(!S.dbest||S.dbest.k!=k||t<S.dbest.t)S.dbest={k,t};save();dlg('<b>每日挑戰完成</b><br>種子 '+seed+'<br>成績 '+t+' 秒'+(crFail?'（含危機失敗加罰 15 秒）':'')+'<br>今日最佳 '+S.dbest.t+' 秒',[['手札',journal],['關閉',shut]])}}
-  renderer.render(scene,cam);shellUp(now);crestUp(now);partyUp(now);sw.material.color.set(SC[lvl()>>1]);
+  renderer.render(scene,cam);if(wantSnap)snap();shellUp(now);crestUp(now);partyUp(now);sw.material.color.set(SC[(S.sw||0)]);
 }
 
 const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
@@ -302,8 +303,8 @@ function tip(){if(!S.hero)return;let t;
   else if(parts<3)t='去找陣石（'+parts+'/3），集齊才能修復渡口。';
   else if(!fixed)t='走到渡口的光環旁修復它，之後解纜免費。';
   else t='本星任務完成！可以按「解纜」出發，或找煉器師煉器。';
-  const ex=['吸星劍會自動攻擊，境界越高招式越強。','紫焰心可在煉器時進化，更容易煉出高品階。','怪物靠太近會受傷，往別處走就能脫身。','灰衣邪修比一般妖獸更強，擊敗可得雙倍獎勵。','練製能做丹藥符籙；和各星球的居民交談，可以邀請他們同行。'];
-  mei(t+(tp++%2?'　'+ex[tp%5]:''))}
+  const ex=['吸星劍會自動攻擊，境界越高招式越強。','紫焰心可在煉器時進化，更容易煉出高品階。','怪物靠太近會受傷，往別處走就能脫身。','灰衣邪修比一般妖獸更強，擊敗可得雙倍獎勵。','練製能做丹藥符籙；和各星球的居民交談，可以邀請他們同行。','吸星劍要在「練製」裡淬煉才會升級，煉器沒有等級上限。'];
+  mei(t+(tp++%2?'　'+ex[tp%6]:''))}
 $('mb').onclick=()=>{ac();tip()};
 function evolve(){const f=S.fl||1;if(f>=4){dlg('紫焰心已臻圓滿「'+FL[4]+'」。',[['好',shut]]);return}const need=80*f,lv=2*f;
   if(lvl()<lv||S.stones<need){dlg('紫焰心進化為「'+FL[f+1]+'」需要境界達「'+REALM[lv]+'」並花費 '+need+' 靈石。<br>目前境界：'+REALM[lvl()]+'・靈石 '+S.stones,[['好',shut]]);return}
@@ -357,7 +358,7 @@ const RC=[['pill','回氣丹',20,2,'氣血歸零時自動服用，回滿氣血']
 function craft(){S.inv=S.inv||{};const iv=S.inv,btn=[];
   RC.forEach(r=>btn.push([r[1]+'（'+r[2]+'靈石'+(r[3]?'＋靈草'+r[3]:'')+'）',()=>{if(S.stones<r[2]||(S.herb||0)<r[3])msg('材料不足。');else{S.stones-=r[2];S.herb=(S.herb||0)-r[3];iv[r[0]]=(iv[r[0]]||0)+1;qEv('craft',1);save();ui();snd('ok')}craft()}]));
   RC.slice(1).forEach(r=>{if(iv[r[0]]>0)btn.push(['使用'+r[1]+'（'+iv[r[0]]+'）',()=>{iv[r[0]]--;if(r[0]=='xp')buffT=90;if(r[0]=='shd')shield=3;if(r[0]=='inc')incT=120;if(r[0]=='spd')spdT=60;if(r[0]=='atk')atkT=60;save();snd('up');msg(r[1]+'生效。');craft()}])});
-  btn.push(['槎具強化',yard],['隊友',party],['離開',shut]);
+  btn.push(['煉製裝備',forge],['淬煉吸星劍',()=>forgeGo('sw')],['槎具強化',yard],['隊友',party],['離開',shut]);
   dlg('<b>練製</b>　靈石 '+S.stones+'　靈草 '+(S.herb||0)+'<br><span style="color:var(--dim)">'+RC.map(r=>r[1]+'：'+r[4]).join('<br>')+'<br>現有：'+RC.map(r=>r[1]+' '+(iv[r[0]]||0)).join('・')+'</span>',btn)}
 $('yard').onclick=()=>{if(!busy)craft()};
 const TA=['每 4 秒射出一道劍影','靈石收益 +20%','受到的傷害 -25%','煉器金區加寬','每 8 秒回復 10 氣血','修真值收益 +20%'],TC=[[0xc9b38a,0x5a4a3a],[0xe8dcc0,0x2f6f66],[0xdfe6ee,0x35506a],[0xb0553a,0x2a2a30],[0xa88a5a,0x6b8a4a],[0x6a5a8a,0x1c1426]],OFF=[[-1.5,.9],[1.5,.9],[0,1.9]];
@@ -375,14 +376,80 @@ function genQuests(R){QS=[];const r=mb(seed*31+7),a=info.aura;
   for(let i=0;i<2;i++){const ri=Math.floor(r()*8),ni=Math.floor(r()*12);let qi=Math.floor(r()*7);if(i&&QS[0].k==QT[qi][0])qi=(qi+1)%7;const k=QT[qi][0];
     const m=xian(NC[ri][0],NC[ri][1],0x1b1b22,0xd0b070);m.scale.setScalar(.85);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:emo('❗')}));sp.scale.set(1.2,1.2,1);sp.position.y=2.9;m.add(sp);place(m,rdir(R,.9,.995),0);items.push({m,t:'npc2',i,sp});
     QS.push({k,title:QT[qi][1],need:{beast:4+a,evil:2+(a>>1),forgeW:1,forgeA:1,alch:1,craft:1,deliver:3}[k],have:0,st:0,name:RO[ri]+'・'+PN[ni],xp:30+a*10,sd:40+a*10})}}
-function qEv(k,n){QS.forEach(q=>{if(q.st==1&&q.k==k){q.have=Math.min(q.need,q.have+n);if(q.have>=q.need){q.st=2;msg('魅兒：支線「'+q.title+'」完成，回去找'+q.name+'領賞吧。')}}});ui()}
+function qEv(k,n){EV[k]=(EV[k]||0)+n;QS.forEach(q=>{if(q.st==1&&q.k==k){q.have=Math.min(q.need,q.have+n);if(q.have>=q.need){q.st=2;msg('魅兒：支線「'+q.title+'」完成，回去找'+q.name+'領賞吧。')}}});ui()}
 function questTxt(){items.forEach(it=>{if(it.t=='npc2'&&it.sp)it.sp.material.map=emo(['❗','⏳','❓','✔️'][QS[it.i].st])});return QS.filter(q=>q.st==1||q.st==2).map(q=>'<br>【支線】'+q.title+' <em>'+q.have+'/'+q.need+'</em>').join('')}
 function talk2(i){const q=QS[i];if(!q)return;const b=[];let tx='<b>'+q.name+'</b><br>';
   if(q.st==0){tx+=LN[q.k](q.need)+'<br><span style="color:var(--dim)">【支線】'+q.title+'　獎勵：修真值 '+q.xp+'・靈石 '+q.sd+'</span>';b.push(['接下任務',()=>{q.st=1;ui();shut()}])}
   else if(q.st==1){tx+='任務進行中：'+q.title+'（'+q.have+'/'+q.need+'）';if(q.k=='deliver')b.push(['交付靈草（持有 '+(S.herb||0)+'）',()=>{if((S.herb||0)>=q.need){S.herb-=q.need;q.have=q.need;q.st=2;save();msg('魅兒：靈草已交付，可以領賞了。');ui();talk2(i)}else{msg('靈草不足。');}}])}
-  else if(q.st==2){tx+='辛苦了，這是答謝。';b.push(['領取獎勵',()=>{q.st=3;gain(q.xp,q.sd);msg('支線完成：'+q.title+'。');ui();shut()}])}
+  else if(q.st==2){tx+='辛苦了，這是答謝。';b.push(['領取獎勵',()=>{q.st=3;(EV.qd=EV.qd||[]).push(q.title);gain(q.xp,q.sd);msg('支線完成：'+q.title+'。');ui();shut()}])}
   else tx+='多謝你，改日再會。';
   b.push(['離開',shut]);dlg(tx,b)}
+
+let EV={};
+function fbChap(n,h,inf,ev,pn){const a=[],nm=h.name,pr=h.g?'她':'他';
+  a.push(nm+'乘槎抵達'+inf.name+'。此地'+N.land[inf.land]+'連綿，靈氣'+N.aura[inf.aura]+'，空氣裡壓著'+N.crisis[inf.crisis]+'將至的沉悶。');
+  if(ev.beast)a.push('一路上，'+pr+'以吸星劍「'+SW[S.sw||0]+'」擊退了 '+ev.beast+' 隻妖獸，劍光所過之處，靈氣隨之流轉。');
+  if(ev.evil)a.push('途中遇上灰衣邪修，'+pr+'與其交手，終將 '+ev.evil+' 名邪修逐出此地。');
+  if(ev.forgeW||ev.forgeA||ev.sword)a.push('夜裡'+pr+'守著胸口的紫焰心，'+(ev.sword?'淬煉吸星劍，':'')+(ev.forgeW?'錘煉兵刃，':'')+(ev.forgeA?'鍛造護具，':'')+'火光映著側臉。');
+  if(ev.alch||ev.craft)a.push(pr+'也趁隙煉了丹藥與符籙，備著日後之用。');
+  if(ev.qd&&ev.qd.length)a.push('此星居民託付之事，'+pr+'一一辦妥：'+ev.qd.join('、')+'。');
+  if(pn!='無')a.push('同行的'+pn+'默默相伴，一行人未曾言退。');
+  a.push('離開時，'+inf.name+'漸遠。'+nm+'望著境界「'+REALM[lvl()]+'」的靈光，知道前路仍遠。');
+  return{title:inf.name+'行',text:a.join('\n\n')}}
+async function writeChap(inf,ev){
+  const L=S.novel=S.novel||[],n=L.length+1,h=S.hero||{g:0,name:'張三'},pn=(S.party||[]).map(k=>NPC[k][0]).join('、')||'無',pv=L[L.length-1];
+  msg('魅兒：正在把這段旅程寫成小說…');
+  const facts='主角：'+h.name+'（'+(h.g?'女':'男')+'）；境界：'+REALM[lvl()]+'；吸星劍：'+SW[S.sw||0]+'；紫焰心：'+FL[S.fl||1]+'；隊友：'+pn+'\n星球：'+inf.name+'（地貌'+N.land[inf.land]+'，靈氣'+N.aura[inf.aura]+'，危機'+N.crisis[inf.crisis]+'，委託人身分'+NPC[inf.power][0]+'）\n事件：擊退妖獸 '+(ev.beast||0)+' 隻；討伐灰衣邪修 '+(ev.evil||0)+' 名；煉製武器 '+(ev.forgeW||0)+' 次、護具 '+(ev.forgeA||0)+' 次、丹藥 '+(ev.alch||0)+' 次、符籙道具 '+(ev.craft||0)+' 次、淬煉吸星劍 '+(ev.sword||0)+' 次；主線靈材'+(ev.done?'已採齊':'未完成')+'；危機'+(ev.crisisOk?'已化解':'未化解')+'；渡口'+(ev.fixed?'已修復':'未修復')+'；完成的居民委託：'+((ev.qd||[]).join('、')||'無');
+  let r=null;
+  try{const sm=window.claude&&await window.claude.use('sample');if(sm){const o=await sm('你是修真長篇小說作者，文風飄逸、節奏明快。請依下列遊戲紀錄寫「第 '+n+' 集」，繁體中文，650 到 900 字，內容原創，不得使用任何現有小說的角色名與專有設定。第一行是標題（不加符號與集數），空一行後是正文，並自然融入所有事件、與前情銜接。\n【前情】'+(pv?'第 '+pv.n+' 集《'+pv.title+'》：'+pv.text.slice(0,200):'（開篇）')+'\n【本集紀錄】\n'+facts,{modelTier:'default',cache:false});const t=(o.text||'').trim().split('\n');const ti=t[0].replace(/^[#\s第\d集：:・\-]+/,'').slice(0,24),bd=t.slice(1).join('\n').trim();if(bd.length>150)r={title:ti||('第 '+n+' 集'),text:bd}}}catch(e){}
+  if(!r)r=fbChap(n,h,inf,ev,pn);
+  L.push({n,title:r.title,text:r.text,planet:inf.name,realm:REALM[lvl()],date:new Date().toISOString().slice(0,10)});S.novel=L;save();msg('魅兒：第 '+n+' 集《'+r.title+'》已寫入小說。')}
+let rdN=0;
+function reader(i){const L=S.novel||[];if(!L.length){dlg('尚無章節。每離開一顆星球，魅兒就會把這段旅程寫成一集。',[['關閉',shut]]);return}
+  rdN=i==null?L.length-1:Math.max(0,Math.min(L.length-1,i));const c=L[rdN];
+  dlg('<b>第 '+c.n+' 集：'+esc(c.title)+'</b>（'+(rdN+1)+'/'+L.length+'）<div style="max-height:46vh;overflow-y:auto;white-space:pre-wrap;line-height:1.8;margin-top:8px;font-size:14px;user-select:text;-webkit-user-select:text">'+esc(c.text)+'</div>',[['上一集',()=>reader(rdN-1)],['下一集',()=>reader(rdN+1)],['匯出',exportMenu],['關閉',shut]])}
+async function dlNovel(){try{const d=await window.claude.use('downloads');if(!d){msg('此環境不支援下載。');return}await d.save({filename:'浮槎紀小說.txt',data:(S.novel||[]).map(c=>'第 '+c.n+' 集　'+c.title+'\n\n'+c.text).join('\n\n————\n\n')})}catch(e){}}
+$('nv').onclick=()=>{if(!busy)reader()};
+
+let wantSnap=false,snapT=12,SH=[];try{SH=JSON.parse(localStorage.getItem('xzp_shots')||'[]')}catch(e){}
+function snap(){wantSnap=false;try{const c=document.createElement('canvas'),r=renderer.domElement,w=960,h=Math.round(w*r.height/r.width);c.width=w;c.height=h;c.getContext('2d').drawImage(r,0,0,w,h);SH.push(c.toDataURL('image/jpeg',.7));if(SH.length>8)SH.splice(Math.floor(Math.random()*SH.length),1);try{localStorage.setItem('xzp_shots',JSON.stringify(SH))}catch(e){SH.splice(0,3)}}catch(e){}}
+function chapMd(c){return '## 第 '+c.n+' 集：'+c.title+'\n\n*星球：'+(c.planet||'未知')+'｜境界：'+(c.realm||'—')+'｜'+(c.date||'—')+'*\n\n'+c.text+'\n'}
+function bookMd(){const L=S.novel||[],h=S.hero||{name:'張三'};return '# 浮槎紀\n\n> 主角：'+h.name+'｜共 '+L.length+' 集\n\n**目錄**\n\n'+L.map(c=>'- 第 '+c.n+' 集：'+c.title).join('\n')+'\n\n---\n\n'+L.map(chapMd).join('\n---\n\n')}
+function ebookHtml(){const L=S.novel||[],h=S.hero||{name:'張三'},img=SH.length?SH[Math.floor(Math.random()*SH.length)]:'';
+  const toc=L.map(c=>'<li><a href="#c'+c.n+'">第 '+c.n+' 集：'+esc(c.title)+'</a></li>').join(''),
+  body=L.map(c=>'<article id="c'+c.n+'"><h2>第 '+c.n+' 集：'+esc(c.title)+'</h2><p class="meta">星球：'+esc(c.planet||'未知')+'｜境界：'+esc(c.realm||'—')+'｜'+esc(c.date||'—')+'</p>'+esc(c.text).split(/\n+/).map(t=>'<p>'+t+'</p>').join('')+'</article>').join('');
+  return '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>浮槎紀</title><style>:root{--bg:#f6f0e0;--fg:#1d2a24;--ac:#2f7d6b}@media(prefers-color-scheme:dark){:root{--bg:#10171a;--fg:#e8efe5;--ac:#6fd3b8}}body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.9 "Noto Serif TC","Songti TC","PMingLiU",serif}main{max-width:36em;margin:0 auto;padding:0 1.2em 4em}header img{width:100%;max-height:50vh;object-fit:cover;display:block}h1{margin:.6em 0 .2em;font-size:2em}h2{color:var(--ac);margin-top:2.4em;border-top:1px solid #8884;padding-top:1em}nav a{color:var(--ac)}p{text-indent:2em;margin:.6em 0}p.meta{text-indent:0;font-size:.8em;opacity:.7}@media print{header img{max-height:30vh}}</style></head><body><header>'+(img?'<img alt="" src="'+img+'">':'')+'</header><main><h1>浮槎紀</h1><p class="meta">主角：'+esc(h.name)+'｜共 '+L.length+' 集</p><nav><ol>'+toc+'</ol></nav>'+body+'</main></body></html>'}
+async function saveF(name,data){try{const d=await window.claude.use('downloads');if(!d){msg('此環境不支援下載。');return}await d.save({filename:name,data})}catch(e){}}
+function exportMenu(){if(!(S.novel||[]).length){msg('尚無章節可匯出。');return}dlg('<b>匯出小說</b><br><span style="color:var(--dim)">章節固定格式：「## 第 N 集：標題」，附星球、境界、日期。</span>',[['1. 純 MD 檔',()=>saveF('浮槎紀.md',bookMd())],['2. HTML 電子書',()=>saveF('浮槎紀電子書.html',ebookHtml())],['3. A4 摺頁小冊 PDF（一張紙折成 8 頁）',pdfBook],['返回',()=>reader(rdN)]])}
+const li=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
+const PW=1240,PH=1754,PM=120,PF='"Noto Serif TC","Songti TC","PMingLiU",serif';
+async function coverPg(title,sub,src){const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;const x=cv.getContext('2d'),im=src&&await li(src);
+  if(im){const k=Math.max(PW/im.width,PH/im.height),w=im.width*k,h=im.height*k;x.drawImage(im,(PW-w)/2,(PH-h)/2,w,h)}else{const g=x.createLinearGradient(0,0,0,PH);g.addColorStop(0,'#274a5a');g.addColorStop(1,'#10211c');x.fillStyle=g;x.fillRect(0,0,PW,PH)}
+  const g=x.createLinearGradient(0,PH*.4,0,PH);g.addColorStop(0,'#0000');g.addColorStop(1,'#000c');x.fillStyle=g;x.fillRect(0,PH*.4,PW,PH*.6);
+  x.fillStyle='#fff';x.textAlign='center';x.font='bold 150px '+PF;x.fillText(title,PW/2,PH-340);x.font='40px '+PF;sub.forEach((t,i)=>x.fillText(t,PW/2,PH-250+i*62));return cv}
+async function pdfBook(){const J=window.jspdf&&window.jspdf.jsPDF;if(!J){msg('PDF 元件未載入（需要連網）。');return}
+  const L=S.novel||[],h=S.hero||{name:'張三'},SC=.6,pm=100,pg=[];let cv=null,cx,y,chs=[],curN=0;msg('魅兒：正在排版摺頁小冊…');
+  const fin=()=>{if(cv)pg.push({u:cv.toDataURL('image/jpeg',.9),ch:chs})};
+  const np=()=>{fin();cv=document.createElement('canvas');cv.width=Math.round(PW*SC);cv.height=Math.round(PH*SC);cx=cv.getContext('2d');cx.scale(SC,SC);cx.fillStyle='#f6f0e0';cx.fillRect(0,0,PW,PH);chs=curN?[curN]:[];y=pm+30};
+  const put=(t,f,lh,col,gap)=>{cx.font=f;cx.fillStyle=col;const ln=[];let a='';for(const ch of t){if(cx.measureText(a+ch).width>PW-2*pm&&a){ln.push(a);a=ch}else a+=ch}if(a)ln.push(a);for(const l of ln){if(y+lh>PH-pm-30){np();cx.font=f;cx.fillStyle=col}cx.fillText(l,pm,y);y+=lh}y+=gap};
+  np();
+  for(const c of L){curN=c.n;if(y>PH-pm-320)np();if(!chs.includes(curN))chs.push(curN);
+    put('第 '+c.n+' 集：'+c.title,'bold 50px '+PF,84,'#2f7d6b',4);put('星球：'+(c.planet||'未知')+'｜境界：'+(c.realm||'—')+'｜'+(c.date||'—'),'28px '+PF,46,'#8a8372',20);
+    c.text.split(/\n+/).forEach(t=>put(t,'38px '+PF,62,'#1d2a24',18));y+=36}
+  fin();
+  const note=()=>{const c=document.createElement('canvas');c.width=Math.round(PW*SC);c.height=Math.round(PH*SC);const x=c.getContext('2d');x.scale(SC,SC);x.fillStyle='#f6f0e0';x.fillRect(0,0,PW,PH);x.fillStyle='#8a8372';x.font='bold 46px '+PF;x.fillText('— 筆記 —',pm,pm+50);x.strokeStyle='#cfc7b0';x.lineWidth=2;for(let i=0;i<20;i++){x.beginPath();x.moveTo(pm,pm+150+i*68);x.lineTo(PW-pm,pm+150+i*68);x.stroke()}return{u:c.toDataURL('image/jpeg',.9),ch:[]}};
+  const V=Math.max(1,Math.ceil(pg.length/6)),pool=[],pick=()=>{if(!pool.length)pool.push(...SH);return pool.length?pool.splice(Math.floor(Math.random()*pool.length),1)[0]:null};
+  const QW=Math.round(PW*SC*2),QH=Math.round(PH*SC*2),pw=QW/2,ph=QH/2,sheets=[];
+  const blank=()=>{const c=document.createElement('canvas');c.width=QW;c.height=QH;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,QW,QH);return c};
+  {const c=blank(),x=c.getContext('2d');x.fillStyle='#1d2a24';x.font='bold 60px '+PF;x.fillText('摺頁小冊說明',100,200);x.font='36px '+PF;['共 '+V+' 本，每本一張 A4（正反兩面，PDF 各兩頁）。','列印：A4、實際大小、雙面列印、沿長邊翻頁。','每本的兩面對齊後：先沿橫向中線對折（上折向下），','再沿直向中線對折（左折向右）。','用美工刀沿上緣折邊劃開（只劃上緣），','即成 8 頁小書，封面在最上面。'].forEach((t,i)=>x.fillText(t,100,320+i*80));sheets.push(c.toDataURL('image/jpeg',.82),blank().toDataURL('image/jpeg',.82))}
+  for(let v=0;v<V;v++){const ps=pg.slice(v*6,v*6+6);while(ps.length<6)ps.push(note());
+    const nums=ps.flatMap(q=>q.ch),lo=nums.length?Math.min(...nums):0,hi=nums.length?Math.max(...nums):0;
+    const front=await coverPg('浮槎紀',['卷 '+(v+1)+' / '+V+(nums.length?'・第 '+lo+(hi>lo?'–'+hi:'')+' 集':''),h.name+' 的星海旅程'],pick()),back=await coverPg('— 卷終 —',['吸星劍・'+SW[S.sw||0],'境界・'+REALM[lvl()]],pick());
+    const im=await Promise.all(ps.map(q=>li(q.u))),P={1:front,8:back};im.forEach((m,i)=>{P[i+2]=m});
+    const mk=lay=>{const c=blank(),x=c.getContext('2d');lay.forEach((row,r)=>row.forEach((n,k)=>{x.save();x.translate(k*pw+pw/2,r*ph+ph/2);if(r==0)x.rotate(Math.PI);if(P[n])x.drawImage(P[n],-pw/2,-ph/2,pw,ph);if(n>1&&n<8){x.fillStyle='#8a8372';x.font='24px '+PF;x.textAlign='center';x.fillText('— '+n+' —',0,ph/2-24)}x.restore()}));x.strokeStyle='rgba(120,120,120,.4)';x.setLineDash([10,10]);x.lineWidth=2;x.beginPath();x.moveTo(pw,0);x.lineTo(pw,QH);x.moveTo(0,ph);x.lineTo(QW,ph);x.stroke();return c.toDataURL('image/jpeg',.82)};
+    sheets.push(mk([[3,6],[2,7]]),mk([[5,4],[8,1]]))}
+  const doc=new J({unit:'mm',format:'a4',compress:true});sheets.forEach((u,i)=>{if(i)doc.addPage();doc.addImage(u,'JPEG',0,0,210,297)});
+  await saveF('浮槎紀摺頁小冊.pdf',doc.output('blob'));msg('魅兒：共 '+V+' 本摺頁小冊，PDF 已準備好。')}
 const fxc=$('fx'),fcx=fxc.getContext('2d'),PAL=['#ffffff','#7ee0c0','#6fb8ff','#f0c668','#ff9a4a','#ff7ad9','#b58cff','#fff27a','#ffffff'];let fw=0,fh=0;
 function drawFx(t){const W=innerWidth,H=innerHeight,D=Math.min(devicePixelRatio,2);if(fw!=W||fh!=H){fw=W;fh=H;fxc.width=W*D;fxc.height=H*D;fxc.style.width=W+'px';fxc.style.height=H+'px'}
   const c=fcx;c.setTransform(D,0,0,D,0,0);c.clearRect(0,0,W,H);
