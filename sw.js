@@ -1,5 +1,5 @@
 // 浮槎紀 service worker：離線可玩（小說生成仍需連網）
-const VER = 'fucha-v1';
+const VER = 'fucha-v2';
 const SHELL = [
   './',
   'index.html',

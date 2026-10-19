@@ -444,7 +444,7 @@ async function saveF(name,data){
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
-function exportMenu(){if(!(S.novel||[]).length){msg('尚無章節可匯出。');return}dlg('<b>匯出小說</b><br><span style="color:var(--dim)">章節固定格式：「## 第 N 集：標題」，附星球、境界、日期。</span>',[['1. 純 MD 檔',()=>saveF('浮槎紀.md',bookMd())],['2. HTML 電子書',()=>saveF('浮槎紀電子書.html',ebookHtml())],['3. A4 摺頁小冊 PDF（一張紙折成 8 頁）',pdfBook],['返回',()=>reader(rdN)]])}
+function exportMenu(){if(!(S.novel||[]).length){msg('尚無章節可匯出。');return}dlg('<b>匯出小說</b><br><span style="color:var(--dim)">章節固定格式：「## 第 N 集：標題」，附星球、境界、日期。</span>',[['1. 純 MD 檔',()=>saveF('浮槎紀.md',bookMd())],['2. HTML 電子書',()=>saveF('浮槎紀電子書.html',ebookHtml())],['3. A4 摺頁小冊 PDF（橫向單面，一張紙折成 8 頁）',pdfBook],['返回',()=>reader(rdN)]])}
 const li=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
 const PW=1240,PH=1754,PM=120,PF='"Noto Serif TC","Songti TC","PMingLiU",serif';
 async function coverPg(title,sub,src){const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;const x=cv.getContext('2d'),im=src&&await li(src);
@@ -458,21 +458,32 @@ async function pdfBook(){const J=window.jspdf&&window.jspdf.jsPDF;if(!J){msg('PD
   const put=(t,f,lh,col,gap)=>{cx.font=f;cx.fillStyle=col;const ln=[];let a='';for(const ch of t){if(cx.measureText(a+ch).width>PW-2*pm&&a){ln.push(a);a=ch}else a+=ch}if(a)ln.push(a);for(const l of ln){if(y+lh>PH-pm-30){np();cx.font=f;cx.fillStyle=col}cx.fillText(l,pm,y);y+=lh}y+=gap};
   np();
   for(const c of L){curN=c.n;if(y>PH-pm-320)np();if(!chs.includes(curN))chs.push(curN);
-    put('第 '+c.n+' 集：'+c.title,'bold 50px '+PF,84,'#2f7d6b',4);put('星球：'+(c.planet||'未知')+'｜境界：'+(c.realm||'—')+'｜'+(c.date||'—'),'28px '+PF,46,'#8a8372',20);
-    c.text.split(/\n+/).forEach(t=>put(t,'38px '+PF,62,'#1d2a24',18));y+=36}
+    put('第 '+c.n+' 集：'+c.title,'bold 58px '+PF,92,'#2f7d6b',4);put('星球：'+(c.planet||'未知')+'｜境界：'+(c.realm||'—')+'｜'+(c.date||'—'),'30px '+PF,50,'#8a8372',22);
+    c.text.split(/\n+/).forEach(t=>put(t,'46px '+PF,74,'#1d2a24',20));y+=40}
   fin();
   const note=()=>{const c=document.createElement('canvas');c.width=Math.round(PW*SC);c.height=Math.round(PH*SC);const x=c.getContext('2d');x.scale(SC,SC);x.fillStyle='#f6f0e0';x.fillRect(0,0,PW,PH);x.fillStyle='#8a8372';x.font='bold 46px '+PF;x.fillText('— 筆記 —',pm,pm+50);x.strokeStyle='#cfc7b0';x.lineWidth=2;for(let i=0;i<20;i++){x.beginPath();x.moveTo(pm,pm+150+i*68);x.lineTo(PW-pm,pm+150+i*68);x.stroke()}return{u:c.toDataURL('image/jpeg',.9),ch:[]}};
   const V=Math.max(1,Math.ceil(pg.length/6)),pool=[],pick=()=>{if(!pool.length)pool.push(...SH);return pool.length?pool.splice(Math.floor(Math.random()*pool.length),1)[0]:null};
-  const QW=Math.round(PW*SC*2),QH=Math.round(PH*SC*2),pw=QW/2,ph=QH/2,sheets=[];
+  const pw=Math.round(PW*SC),ph=Math.round(PH*SC),QW=pw*4,QH=ph*2,sheets=[],LAY=[[5,4,3,2],[6,7,8,1]];
   const blank=()=>{const c=document.createElement('canvas');c.width=QW;c.height=QH;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,QW,QH);return c};
-  {const c=blank(),x=c.getContext('2d');x.fillStyle='#1d2a24';x.font='bold 60px '+PF;x.fillText('摺頁小冊說明',100,200);x.font='36px '+PF;['共 '+V+' 本，每本一張 A4（正反兩面，PDF 各兩頁）。','列印：A4、實際大小、雙面列印、沿長邊翻頁。','每本的兩面對齊後：先沿橫向中線對折（上折向下），','再沿直向中線對折（左折向右）。','用美工刀沿上緣折邊劃開（只劃上緣），','即成 8 頁小書，封面在最上面。'].forEach((t,i)=>x.fillText(t,100,320+i*80));sheets.push(c.toDataURL('image/jpeg',.82),blank().toDataURL('image/jpeg',.82))}
+  const wrap=(x,t,mx)=>{const o=[];let a='';for(const ch of t){if(x.measureText(a+ch).width>mx&&a){o.push(a);a=ch}else a+=ch}if(a)o.push(a);return o};
+  {const c=blank(),x=c.getContext('2d'),mx=QW-240;x.textAlign='left';x.fillStyle='#1d2a24';x.font='bold 62px '+PF;x.fillText('摺頁小冊說明：一張 A4 摺成 8 頁',120,170);
+   x.font='36px '+PF;let yy=270;
+   ['共 '+V+' 本，每本一張紙。從 PDF 第 2 頁開始印，第 1 頁（本頁）不用印。','列印設定：A4、橫向、實際大小（不要選「縮放」或「符合頁面」）、單面。','1. 字面朝上，左右對折（兩短邊對齊）壓出折線後展開；再把左右兩邊各往中線折，壓出折線後展開（共 4 欄）。','2. 上下對折（兩長邊對齊）壓出折線後展開。折線方向不拘。','3. 左右對折，從折邊沿橫向中線（紅色虛線）剪進去，只剪一格寬，剪到第一條直折線為止，然後展開。紙中央會有兩格寬的剪口。','4. 沿橫向中線上下對折，字面朝外，剪口落在折邊上。兩手捏住左右兩端往中間推，剪口會撐成菱形。','5. 繼續推，直到四片葉子疊成十字，壓平成冊。封面在最上面，從第 2 頁依序往後翻。'].forEach(t=>{wrap(x,t,mx).forEach(l=>{x.fillText(l,120,yy);yy+=62});yy+=22});
+   const dx=120,dy=yy+60,cw=190,ch=269;x.font='bold 30px '+PF;x.fillStyle='#8a8372';x.fillText('頁序示意（上排倒置，正好是印出來的樣子）',dx,dy-24);
+   x.strokeStyle='#8a8372';x.lineWidth=2;x.setLineDash([]);LAY.forEach((row,r)=>row.forEach((n,k)=>{x.save();x.translate(dx+k*cw+cw/2,dy+r*ch+ch/2);if(r==0)x.rotate(Math.PI);x.strokeRect(-cw/2,-ch/2,cw,ch);x.fillStyle='#2f7d6b';x.font='bold 80px '+PF;x.textAlign='center';x.textBaseline='middle';x.fillText(String(n),0,0);x.restore()}));
+   x.strokeStyle='#d33';x.lineWidth=5;x.beginPath();x.moveTo(dx+cw,dy+ch);x.lineTo(dx+3*cw,dy+ch);x.stroke();
+   sheets.push(c.toDataURL('image/jpeg',.82))}
   for(let v=0;v<V;v++){const ps=pg.slice(v*6,v*6+6);while(ps.length<6)ps.push(note());
     const nums=ps.flatMap(q=>q.ch),lo=nums.length?Math.min(...nums):0,hi=nums.length?Math.max(...nums):0;
     const front=await coverPg('浮槎紀',['卷 '+(v+1)+' / '+V+(nums.length?'・第 '+lo+(hi>lo?'–'+hi:'')+' 集':''),h.name+' 的星海旅程'],pick()),back=await coverPg('— 卷終 —',['吸星劍・'+SW[S.sw||0],'境界・'+REALM[lvl()]],pick());
     const im=await Promise.all(ps.map(q=>li(q.u))),P={1:front,8:back};im.forEach((m,i)=>{P[i+2]=m});
-    const mk=lay=>{const c=blank(),x=c.getContext('2d');lay.forEach((row,r)=>row.forEach((n,k)=>{x.save();x.translate(k*pw+pw/2,r*ph+ph/2);if(r==0)x.rotate(Math.PI);if(P[n])x.drawImage(P[n],-pw/2,-ph/2,pw,ph);if(n>1&&n<8){x.fillStyle='#8a8372';x.font='24px '+PF;x.textAlign='center';x.fillText('— '+n+' —',0,ph/2-24)}x.restore()}));x.strokeStyle='rgba(120,120,120,.4)';x.setLineDash([10,10]);x.lineWidth=2;x.beginPath();x.moveTo(pw,0);x.lineTo(pw,QH);x.moveTo(0,ph);x.lineTo(QW,ph);x.stroke();return c.toDataURL('image/jpeg',.82)};
-    sheets.push(mk([[3,6],[2,7]]),mk([[5,4],[8,1]]))}
-  const doc=new J({unit:'mm',format:'a4',compress:true});sheets.forEach((u,i)=>{if(i)doc.addPage();doc.addImage(u,'JPEG',0,0,210,297)});
+    const c=blank(),x=c.getContext('2d');
+    LAY.forEach((row,r)=>row.forEach((n,k)=>{x.save();x.translate(k*pw+pw/2,r*ph+ph/2);if(r==0)x.rotate(Math.PI);if(P[n])x.drawImage(P[n],-pw/2,-ph/2,pw,ph);if(n>1&&n<8){x.fillStyle='#8a8372';x.font='24px '+PF;x.textAlign='center';x.fillText('— '+n+' —',0,ph/2-24)}x.restore()}));
+    x.strokeStyle='rgba(120,120,120,.4)';x.lineWidth=2;x.setLineDash([10,10]);x.beginPath();[1,2,3].forEach(i=>{x.moveTo(i*pw,0);x.lineTo(i*pw,QH)});x.moveTo(0,ph);x.lineTo(pw,ph);x.moveTo(3*pw,ph);x.lineTo(QW,ph);x.stroke();
+    x.strokeStyle='#d33';x.lineWidth=4;x.setLineDash([16,10]);x.beginPath();x.moveTo(pw,ph);x.lineTo(3*pw,ph);x.stroke();x.setLineDash([]);
+    x.fillStyle='#d33';x.font='bold 22px '+PF;x.textAlign='center';x.fillText('剪開（只剪紅線這一段）',2*pw,ph-10);
+    sheets.push(c.toDataURL('image/jpeg',.85))}
+  const doc=new J({unit:'mm',format:'a4',orientation:'landscape',compress:true});sheets.forEach((u,i)=>{if(i)doc.addPage('a4','landscape');doc.addImage(u,'JPEG',0,0,297,210)});
   await saveF('浮槎紀摺頁小冊.pdf',doc.output('blob'));msg('魅兒：共 '+V+' 本摺頁小冊，PDF 已準備好。')}
 const fxc=$('fx'),fcx=fxc.getContext('2d'),PAL=['#ffffff','#7ee0c0','#6fb8ff','#f0c668','#ff9a4a','#ff7ad9','#b58cff','#fff27a','#ffffff'];let fw=0,fh=0;
 function drawFx(t){const W=innerWidth,H=innerHeight,D=Math.min(devicePixelRatio,2);if(fw!=W||fh!=H){fw=W;fh=H;fxc.width=W*D;fxc.height=H*D;fxc.style.width=W+'px';fxc.style.height=H+'px'}
