@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d2230">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="浮槎紀">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>浮槎紀・原型</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d2230;--fg:#f1ecdc;--dim:#a9bcc0;--panel:rgba(9,28,40,.74);--line:rgba(241,236,220,.22);--jade:#7ee0c0;--gold:#f0c668;--red:#ff7a6b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#dcebe6;--fg:#12302f;--dim:#41615f;--panel:rgba(246,250,246,.82);--line:rgba(18,48,47,.25);--jade:#0b7a5e;--gold:#8a5a00;--red:#b3261e;color-scheme:light}}
+:root[data-theme="dark"]{--bg:#0d2230}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--fg);font-family:"Noto Serif TC","PingFang TC","Microsoft JhengHei",serif;touch-action:none;user-select:none}
+#c{position:fixed;inset:0}
+.p{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:13px;line-height:1.55;backdrop-filter:blur(6px)}
+#card{top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;max-width:48vw}
+#card b{font-size:15px;color:var(--jade)}
+#card span{color:var(--dim)}
+#st{top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;text-align:right}
+#bar{height:5px;background:var(--line);border-radius:3px;margin-top:5px;overflow:hidden}
+#bar i{display:block;height:100%;width:0;background:var(--jade)}
+#fu{left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 120px);transform:translateX(-50%);width:min(88vw,420px);text-align:center;transition:opacity .4s}
+#go{left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);transform:translateX(-50%);display:flex;gap:6px;padding:6px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:94vw}
+#go button{padding:8px 10px;font-size:13px}
+button{font:inherit;font-size:14px;font-weight:700;color:var(--fg);background:transparent;border:1px solid var(--jade);border-radius:8px;padding:9px 16px;cursor:pointer}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button:active{background:var(--jade);color:var(--bg)}
+#q{top:calc(env(safe-area-inset-top,0px) + 74px);left:8px;max-width:48vw}
+#q em{font-style:normal;color:var(--gold)}
+#arrow{left:0;top:0;text-align:center;width:64px;display:none;pointer-events:none}
+#ai{font-size:30px;line-height:1;color:var(--gold)}
+#ad{font-size:12px;color:var(--dim)}
+#dlg{left:50%;top:50%;transform:translate(-50%,-50%);width:min(88vw,360px);display:none;z-index:5}
+#dlg .r{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#dlg{max-height:86vh;overflow-y:auto;touch-action:pan-y}
+#g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.cell{height:64px;font-size:28px;padding:0}
+#fbar{position:relative;height:22px;border:1px solid var(--line);border-radius:6px;margin:10px 0}
+#fz{position:absolute;top:0;height:100%;background:var(--jade);opacity:.5}
+#fm{position:absolute;top:0;width:6px;height:100%;background:var(--gold)}
+#mei{position:fixed;left:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 128px);display:flex;align-items:flex-end;gap:6px;z-index:4}
+#mb{font-size:30px;line-height:1;padding:5px 8px;border-radius:50%;background:var(--panel);animation:fl 2s ease-in-out infinite}
+#mt{position:static;display:none;font-size:13px;max-width:52vw}
+@keyframes fl{50%{transform:translateY(-5px)}}
+#dlg input{user-select:text;-webkit-user-select:text}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
+<canvas id="fx" style="position:fixed;inset:0;pointer-events:none"></canvas>
+<div class="p" id="card"></div>
+<div class="p" id="st"></div>
+<div class="p" id="q"></div>
+<div class="p" id="arrow"><div id="ai">▲</div><div id="ad"></div></div>
+<div class="p" id="fu"></div>
+<div class="p" id="go"><button id="daily">每日挑戰</button><button id="jr">手札</button><button id="nv">小說</button><button id="yard">練製</button><button id="mu">音效：開</button><button id="inst" style="display:none">安裝</button><button id="sail">解纜・前往下一顆星</button></div>
+<div id="mei"><button id="mb" aria-label="魅兒導覽">🧚</button><div class="p" id="mt"></div></div>
+<div class="p" id="dlg"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const N={aura:['稀薄','貧瘠','普通','充沛','濃郁','狂暴'],land:['山水','荒漠','冰原','雲海浮島','古林'],power:['無主散修','商會坊市','劍修宗門','煉器世家','妖族聚落','魔修殘黨'],crisis:['靈潮暴走','妖獸圍城','心魔瘴氣','靈槎失控','資源爭奪','上古禁制'],boon:['靈藥','礦脈','古劍遺蹟','洞府傳承','靈獸蛋','秘境地圖'],sky:['長晝','長夜','雙月','靈雨','罡風','極光']};
+const REALM=['引靈','聚元','凝脈','築基','結丹','化嬰','御虛','通玄','歸真'],TH=[0,60,150,260,400,580,800,1050,1350,1e9];
+const GROUND=[0x62b46f,0xdca85e,0xc3e6f2,0xd5daf0,0x37895d],SKY=[0x86c9e8,0xf2c690,0x9fbdd8,0xb9c6f2,0x4a7c69];
+const NAMES=['青嵐','赤砂','凝霜','雲渺','幽篁','靈淵','落星','白瀾','玄圃','栖霞'];
+function mb(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function roll(seed){
+  if(seed===1)return{aura:3,land:0,power:1,crisis:4,boon:0,sky:3};
+  const R=mb(seed),d=()=>Math.floor(R()*6);
+  const r={aura:d(),land:Math.floor(R()*5),power:d(),crisis:d(),boon:d(),sky:d()};
+  for(let i=0;i<30;i++){
+    if(r.crisis==0&&r.aura<2)r.crisis=d();
+    else if(r.aura==5&&r.power==0)r.power=d();
+    else if(r.land==1&&r.sky==3)r.sky=d();
+    else if(r.land==2&&r.sky==0)r.sky=d();
+    else if(r.land==3&&r.boon==1)r.boon=d();
+    else break;
+  }
+  return r;
+}
+let S={stones:120,xp:0,visited:0,hull:0,sail:0,comp:0};
+try{const s=JSON.parse(localStorage.getItem('fucha')||'null');if(s)S=Object.assign(S,s)}catch(e){}
+function save(){try{localStorage.setItem('fucha',JSON.stringify(S))}catch(e){}}
+
+const R0=100,P=new THREE.Vector3(0,R0,0);
+const renderer=new THREE.WebGLRenderer({canvas:$('c'),antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(55,1,.1,75);
+cam.position.set(0,R0+8,9);cam.lookAt(0,R0-.5,0);
+scene.add(new THREE.HemisphereLight(0xffffff,0x405060,.95));
+const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(6,12,8);scene.add(sun);
+function resize(){renderer.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+
+const hero=new THREE.Group();
+const body=new THREE.Mesh(new THREE.CylinderGeometry(.28,.36,.9,10),new THREE.MeshLambertMaterial({color:0xf1ecdc}));body.position.y=.45;
+const head=new THREE.Mesh(new THREE.SphereGeometry(.3,12,10),new THREE.MeshLambertMaterial({color:0xffd9b0}));head.position.y=1.1;
+const hat=new THREE.Mesh(new THREE.ConeGeometry(.4,.35,10),new THREE.MeshLambertMaterial({color:0x2f6f66}));hat.position.y=1.42;
+hero.add(xian(0xf1ecdc,0x2f6f66,0x1b1b22,0xf0c668));hero.scale.setScalar(.8);hero.position.copy(P);scene.add(hero);
+
+let moons=[],planet=null,items=[],seed=1,info=null,herbs=0,crisisLeft=0,done=false,tArrive=0;
+const up=new THREE.Vector3(0,1,0);
+function place(m,dir,lift){m.position.copy(dir).multiplyScalar(R0+(lift||0));m.quaternion.setFromUnitVectors(up,dir);planet.add(m)}
+function rdir(R,minY,maxY){let v;do{const u=R()*2-1,t=R()*6.2832,s=Math.sqrt(1-u*u);v=new THREE.Vector3(s*Math.cos(t),u,s*Math.sin(t))}while(v.y>maxY||v.y<minY);return v}
+function deco(R,land){
+  const g=new THREE.Group(),c=(h)=>new THREE.MeshLambertMaterial({color:h,flatShading:true});
+  if(land==1){const a=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,1.2+R()*.8,6),c(0xb8774a));a.position.y=.7;g.add(a)}
+  else if(land==2){const a=new THREE.Mesh(new THREE.OctahedronGeometry(.5+R()*.4),c(0x8fd4ee));a.scale.y=1.8;a.position.y=.8;g.add(a)}
+  else if(land==3){const a=new THREE.Mesh(new THREE.SphereGeometry(.6+R()*.4,8,6),c(0xffffff));a.scale.y=.6;a.position.y=.5;g.add(a)}
+  else{const h=1.4+R()*1.6,a=new THREE.Mesh(new THREE.ConeGeometry(.6,h,7),c(land==4?0x1f5f43:0x3f9a55));a.position.y=h/2+.2;g.add(a)}
+  return g;
+}
+function marker(color,r){return new THREE.Mesh(new THREE.OctahedronGeometry(r),new THREE.MeshBasicMaterial({color}))}
+
+function build(sd,first){
+  seed=sd;info=roll(sd);nextSeed=Math.floor(Math.random()*9000)+2;herbs=0;done=false;tArrive=performance.now();
+  if(planet)scene.remove(planet);moons.forEach(m=>scene.remove(m));moons=[];mons=[];bullets.forEach(b=>scene.remove(b.m));bullets=[];
+  planet=new THREE.Group();scene.add(planet);
+  const R=mb(sd*7+3),geo=new THREE.IcosahedronGeometry(R0,24),pos=geo.attributes.position,col=[],base=new THREE.Color(GROUND[info.land]);
+  for(let i=0;i<pos.count;i+=3){const k=.88+R()*.2,c=base.clone().multiplyScalar(k);for(let j=0;j<3;j++)col.push(c.r,c.g,c.b)}
+  geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  planet.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true,flatShading:true})));
+  for(let i=0;i<900;i++){const g=deco(R,info.land);place(g,rdir(R,-1,.995),0);g.rotateY(R()*6)}
+  const tw=new THREE.Mesh(new THREE.CylinderGeometry(.5,.9,3.6,6),new THREE.MeshLambertMaterial({color:0xe9dcc0,flatShading:true}));tw.position.y=1.8;
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(1.1,.9,6),new THREE.MeshLambertMaterial({color:0xb4453a}));roof.position.y=4;
+  const lm=new THREE.Group();lm.add(tw,roof);place(lm,rdir(R,.85,.99),0);
+  items=[];accepted=false;
+  {const np=new THREE.Group(),nb=new THREE.Mesh(new THREE.ConeGeometry(.5,1.4,8),new THREE.MeshLambertMaterial({color:0x8a5fd0})),nh=new THREE.Mesh(new THREE.SphereGeometry(.3,10,8),new THREE.MeshLambertMaterial({color:0xffd9b0}));nb.position.y=.7;nh.position.y=1.6;np.add(xian(0x8a5fd0,0xf0c668,0xe8e8ee,0xb0b0c0));np.scale.setScalar(.85);place(np,rdir(R,.96,.995),0);items.push({m:np,t:'npc'})}
+  genQuests(R);parts=0;fixed=false;
+  {const pg=new THREE.Group(),L=c=>new THREE.MeshLambertMaterial({color:c,flatShading:true}),ring=new THREE.Mesh(new THREE.TorusGeometry(2.2,.35,8,20),L(0x777f86));ring.position.y=2.6;pg.add(ring);
+   [-2.2,2.2].forEach(x=>{const p=new THREE.Mesh(new THREE.CylinderGeometry(.3,.4,2.6,6),L(0x9a9aa0));p.position.set(x,1.3,0);pg.add(p)});
+   place(pg,rdir(R,.9,.985),0);items.push({m:pg,t:'portal',ring});
+   for(let i=0;i<3;i++){const m=marker(0x6aa8ff,.38);place(m,rdir(R,.8,.997),1);items.push({m,t:'part'})}}
+  town(R,info.power);
+  for(let i=0;i<5;i++){const m=marker(0x7ee0c0,.32);place(m,rdir(R,.8,.997),.9);items.push({m,t:'herb'})}
+  const ch=marker(0xf0c668,.5);place(ch,rdir(R,.8,.99),1);items.push({m:ch,t:'chest'});
+  crisisN=crisisLeft=Math.max(2,CR[info.crisis][1]-(S.hull>>1));crT=0;crFail=false;for(let i=0;i<crisisN;i++){const m=marker(0xff5c4d,.4);place(m,rdir(R,.85,.997),1.1);items.push({m,t:'bad',k:i})}
+  const night=info.sky==1||info.sky==2;
+  const sk=new THREE.Color(SKY[info.land]);if(night)sk.multiplyScalar(.28);
+  scene.background=sk;scene.fog=new THREE.Fog(sk,25,62);
+  if(info.sky==2){[[-20,R0+28,-40,3],[22,R0+34,-50,2]].forEach(a=>{const m=new THREE.Mesh(new THREE.SphereGeometry(a[3],16,12),new THREE.MeshBasicMaterial({color:0xfff4cc,fog:false}));m.position.set(a[0],a[1],a[2]);scene.add(m);moons.push(m)})}
+  ui();
+  const nm=NAMES[(sd*3)%NAMES.length]+'星';
+  info.name=sd===1?'青嵐星':nm;S.log=(S.log||[]);if(!S.log.some(l=>l.seed==sd)){S.log.push({seed:sd,name:info.name});S.log=S.log.slice(-8);save()}
+  ui();
+  msg(first?'魅兒：歡迎上槎！青綠色的是靈材，金色是機緣，紅色是瘴球，紫衣人是委託人，藍色陣石集滿三個可修復渡口。角色會自動射擊靠近的猛獸。用方向鍵、WASD 或拖曳螢幕移動，畫面邊緣的金色箭頭會指向最近的目標。':'魅兒：靠岸了，先看左上角的生成卡，再決定要先採集還是先化解危機。');
+}
+function lvl(){let i=0;while(S.xp>=TH[i+1])i++;return i}
+function ui(){
+  if(!info)return;const l=lvl();
+  $('card').innerHTML='<b>'+(info.name||'')+'</b> <span>S-'+String(seed).padStart(4,'0')+'</span><br><span>靈氣</span>'+N.aura[info.aura]+'・'+N.land[info.land]+'<br><span>勢力</span>'+N.power[info.power]+'<br><span>危機</span>'+N.crisis[info.crisis]+'<br><span>機緣</span>'+N.boon[info.boon]+'・'+N.sky[info.sky];
+  $('st').innerHTML=(S.hero?'<b>'+esc(S.hero.name)+'</b><br>':'')+'靈石 '+S.stones+'<br>吸星劍・'+SW[(S.sw||0)]+'<br>劍刃 '+GNm(S.wpn||0)+'・護具 '+GNm(S.arm||0)+'<br>紫焰心 '+FL[S.fl||1]+'・隊友 '+(S.party||[]).length+'/3<br>氣血 <span id="hp">'+Math.ceil(php)+'</span>/100<br>境界：'+REALM[l]+'<div id="bar"><i style="width:'+Math.min(100,(S.xp-TH[l])/(TH[l+1]-TH[l])*100)+'%"></i></div>';
+  $('q').innerHTML=(accepted?'委託：'+NPC[info.power][0]+'<br>':'')+'採集'+N.boon[info.boon]+' <em>'+herbs+'/5</em><br>'+CR[info.crisis][3]+' <em>'+(crFail?'失敗':(crisisN-crisisLeft)+'/'+crisisN)+'</em><span id="ct"></span>'+'<br>修復渡口 <em>'+(fixed?'完成':parts+'/3')+'</em>'+(daily?'<br>每日挑戰 <span id="dt"></span>':'')+(done?'<br>任務完成':'')+questTxt();
+  const cost=fare();const pv=(()=>{const r=roll(nextSeed),a=[];if(S.comp>0)a.push('靈氣'+N.aura[r.aura]);if(S.comp>1)a.push(N.land[r.land]);if(S.comp>2)a.push(N.crisis[r.crisis]);return a.join('・')})();$('sail').textContent='解纜・'+(cost?cost+' 靈石':'免費')+(pv?'（前方：'+pv+'）':'');
+}
+function fare(){return S.visited==0||fixed?0:Math.max(0,50+(info?info.aura*10:0)-S.sail*8)}
+let mt;function msg(t){const f=$('fu');f.textContent=t;f.style.opacity=1;clearTimeout(mt);mt=setTimeout(()=>f.style.opacity=.0,5200)}
+function gain(xp,st){snd('get');const mul=1+info.aura*.2;xp=Math.round(xp*mul*(buffT>0?1.5:1)*(has(5)?1.2:1));st=Math.round(st*mul*(has(1)?1.2:1));const b=lvl();S.xp+=xp;S.stones+=st;if(lvl()>b){snd('up');msg('突破！你踏入「'+REALM[lvl()]+'」境。')}save();ui()}
+
+const NPC=[['迷途散修','我的藥簍被妖獸叼走了，能幫我採齊靈材嗎？'],['坊市掌櫃','近來靈材被搶得兇，替我採齊五份，價錢好說。'],['守劍老修士','此地劍氣紊亂，先採靈材穩住劍心吧。'],['煉器師','火候不到，不收。去採靈材，再回來煉丹。'],['妖族長老','靈氣不穩，採些靈材安撫族人。'],['隱世高人','你身上有旅人的味道。採靈材，順便化解瘴氣。']];
+let busy=false,accepted=false,npcCD=0;
+function dlg(h,btns){busy=true;const d=$('dlg');d.innerHTML=h+'<div class="r"></div>';d.style.display='block';const r=d.querySelector('.r');btns.forEach(b=>{const e=document.createElement('button');e.textContent=b[0];e.onclick=b[1];r.appendChild(e)});return d}
+function shut(){$('dlg').style.display='none';busy=false;npcCD=performance.now()+4000}
+function talk(){const n=NPC[info.power];dlg('<b>【主線】'+n[0]+'・'+PN[seed%12]+'</b><br>'+n[1]+'<br><span style="color:var(--dim)">危機：'+CR[info.crisis][3]+'，共 '+crisisN+' 處（'+RL[info.crisis]+'）'+(CR[info.crisis][2]?'，限時 '+CR[info.crisis][2]+' 秒':'')+'。</span>',[[accepted?'已接任務':'接下任務',()=>{accepted=true;ui();shut()}],['採藥小遊戲',pick],['煉丹小遊戲',alch],['煉器小遊戲',forge],[has(info.power)?'辭別隊友':'邀請同行（60 靈石）',recruit],['離開',shut]])}
+function pick(){let sc=0,t=0,cell=-1,kind=0;const d=dlg('採藥：點靈草，避開毒草（約 15 秒）<br>分數 <span id="sc">0</span><div id="g"></div>',[]);const g=d.querySelector('#g');
+  const cs=[...Array(9)].map((_,i)=>{const b=document.createElement('button');b.className='cell';b.onclick=()=>{if(cell!=i)return;sc+=kind?-1:1;cell=-1;b.textContent='';d.querySelector('#sc').textContent=sc};g.appendChild(b);return b});
+  const iv=setInterval(()=>{if(cell>=0)cs[cell].textContent='';cell=Math.floor(Math.random()*9);kind=Math.random()<.25?1:0;cs[cell].textContent=kind?'☠':'🌿';if(++t>=22){clearInterval(iv);const ok=sc>=8;if(ok)gain(sc*3,sc*6);dlg((ok?'採藥成功':'再接再厲')+'：'+sc+' 分',[['好',shut]])}},700)}
+function alch(){let hit=0,rd=0,x=0,dir=1,zone=.5,sp=.012;const d=dlg('煉丹：綠區內按下「收火」（共 3 輪）<div id="fbar"><div id="fz"></div><div id="fm"></div></div><span id="fr"></span>',[['收火',()=>{const ok=Math.abs(x-zone)<.12;if(ok)hit++;rd++;d.querySelector('#fr').textContent=(ok?'火候剛好':'火候不到')+'（'+hit+'/'+rd+'）';next()}]]);
+  function next(){if(rd>=3){clearInterval(iv);const ok=hit>=2;if(ok){gain(hit*20,hit*30);qEv('alch',1)}dlg(ok?'丹成！成功 '+hit+' 次。':'丹毀了……再試一次吧。',[['好',shut]]);return}zone=.15+Math.random()*.7;sp=.012+rd*.006;d.querySelector('#fz').style.cssText='left:'+(zone-.12)*100+'%;width:24%'}
+  const iv=setInterval(()=>{x+=dir*sp;if(x>1||x<0)dir*=-1;const m=d.querySelector('#fm');if(m)m.style.left=Math.max(0,Math.min(1,x))*100+'%'},16);next()}
+
+const GN=['無','凡品','精煉','上品','極品'];const GNm=l=>l<=4?GN[l]:'極品+'+(l-4);if(S.gear&&S.wpn===undefined){S.wpn=S.gear;delete S.gear}
+let AC=null,mute=false;try{mute=localStorage.getItem('fmute')=='1'}catch(e){}
+function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume()}catch(e){}}
+function snd(k){if(mute||!AC)return;try{const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime,f={ok:660,bad:170,get:880,up:1040,hurt:120}[k]||440;o.type=(k=='bad'||k=='hurt')?'sawtooth':'sine';o.frequency.value=f;if(k=='up')o.frequency.linearRampToValueAtTime(1560,t+.25);g.gain.setValueAtTime(.07,t);g.gain.exponentialRampToValueAtTime(.001,t+(k=='up'?.35:.16));o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.36)}catch(e){}}
+addEventListener('pointerdown',ac);addEventListener('keydown',ac);
+$('mu').textContent='音效：'+(mute?'關':'開');
+$('mu').onclick=()=>{mute=!mute;$('mu').textContent='音效：'+(mute?'關':'開');try{localStorage.setItem('fmute',mute?'1':'0')}catch(e){}ac();snd('ok')};
+function forge(){dlg('<b>煉器</b>　靈石 '+S.stones+'<br>紫焰心「'+FL[S.fl||1]+'」：金區更寬、可能煉出更高品階。<br>要煉製哪一件？費用 30＋10×目前等級 靈石，等級沒有上限。<br><span style="color:var(--dim)">武器：'+GNm(S.wpn||0)+'（自動射擊更強）<br>護具：'+GNm(S.arm||0)+'（受到的傷害更低）</span>',[['武器',()=>forgeGo('wpn')],['護具',()=>forgeGo('arm')],['紫焰心進化',evolve],['離開',shut]])}
+function forgeGo(sl){
+  const nm=sl=='wpn'?'武器':sl=='arm'?'護具':'吸星劍',sv=S.sw||0,cost=sl=='sw'?80*(sv+1):30+10*(S[sl]||0),hb=sl=='sw'?3*(sv+1):0;if(sl=='sw'){if(sv>=4){dlg('吸星劍已臻圓滿「'+SW[4]+'」。',[['好',shut]]);return}if(lvl()<2*(sv+1)){dlg('淬煉至「'+SW[sv+1]+'」需要境界達「'+REALM[2*(sv+1)]+'」。',[['好',shut]]);return}if((S.herb||0)<hb){dlg('淬煉需要靈草 '+hb+' 份，目前 '+(S.herb||0)+'。',[['好',shut]]);return}}
+  if(S.stones<cost){dlg('需要 '+cost+' 靈石，目前只有 '+S.stones+'。',[['好',shut]]);return}
+  S.stones-=cost;S.herb=(S.herb||0)-hb;save();ui();
+  let tot=0,rd=0,x=0,dir=1,zone=.5,sp=.014;const w=(info.power==3?.16:.1)+((S.fl||1)-1)*.025+(has(3)?.03:0);
+  const d=dlg('煉器：標記進入金區時按「錘煉」（共 3 錘，已花 '+cost+' 靈石）'+(info.power==3?'<br><span style="color:var(--dim)">煉器世家指點：金區加寬</span>':'')+'<div id="fbar"><div id="fz"></div><div id="fm"></div></div><span id="fr"></span>',[['錘煉',()=>{const df=Math.abs(x-zone),q=df<w*.4?3:df<w?2:0;tot+=q;rd++;snd(q?'ok':'bad');d.querySelector('#fr').textContent=['落空','','良好','完美'][q]+'（'+rd+'/3）';next()}]]);
+  function next(){
+    if(rd>=3){clearInterval(iv);let g=tot>=8?4:tot>=6?3:tot>=3?2:1;if(Math.random()<((S.fl||1)-1)*.15)g=Math.min(4,g+1);qEv(sl=='wpn'?'forgeW':sl=='arm'?'forgeA':'sword',1);
+      if(sl=='sw'){if(tot>=5){S.sw=sv+1;save();gain(tot*10,0);ui();snd('up');dlg('吸星劍淬煉成功！進入「'+SW[S.sw]+'」。',[['好',shut]])}else{S.stones+=Math.floor(cost/2);save();ui();dlg('火候不足，淬煉失敗，返還一半靈石。',[['好',shut]])}}
+      else{S[sl]=(S[sl]||0)+g;save();gain(tot*6,0);ui();dlg('煉成「'+GNm(g)+nm+'」，'+nm+'提升至 '+GNm(S[sl])+'。',[['好',shut]])}
+      return}
+    zone=.15+Math.random()*.7;sp=.014+rd*.007;d.querySelector('#fz').style.cssText='left:'+(zone-w)*100+'%;width:'+w*200+'%;background:var(--gold);opacity:.7'}
+  const iv=setInterval(()=>{x+=dir*sp;if(x>1||x<0)dir*=-1;const m=d.querySelector('#fm');if(m)m.style.left=Math.max(0,Math.min(1,x))*100+'%'},16);next()}
+const CR=[['靈潮暴走',5,40,'平息靈潮'],['妖獸圍城',4,35,'驅退妖獸'],['心魔瘴氣',3,0,'驅散心魔'],['靈槎失控',3,30,'穩住靈槎'],['資源爭奪',4,0,'調停爭奪'],['上古禁制',2,0,'解開禁制']];
+const RL=['靈潮球四處漂移','妖獸會朝你逼近','心魔靠近才現形','槎身失控時操控會反轉','對手會搶先挪走目標','須依序化解，灰色者尚未開啟'];
+let crRev=false,crisisN=3,crT=0,crFail=false,nextSeed=Math.floor(Math.random()*9000)+2;
+const UP=[['槎身','hull','減少危機處數、降低失敗損失'],['帆','sail','降低槎引費'],['羅盤','comp','預覽前方星球（靈氣、地貌、危機）']];
+const upc=k=>100*(S[k]+1);
+function yard(){dlg('<b>槎具強化</b>　靈石 '+S.stones+'<br><span style="color:var(--dim)">'+UP.map(u=>u[0]+'：'+u[2]).join('<br>')+'</span>',UP.map(u=>[u[0]+' Lv'+S[u[1]]+(S[u[1]]>=3?'（已滿）':'・'+upc(u[1])),()=>{const k=u[1];if(S[k]<3&&S.stones>=upc(k)){S.stones-=upc(k);S[k]++;save();ui()}yard()}]).concat([['返回練製',craft],['離開',shut]]))}
+$('yard').onclick=()=>{if(!busy)yard()};
+let parts=0,fixed=false,daily=false,dDone=false,dT=0;
+let mons=[],bullets=[],php=100,spT=0,hurt=0,shootT=0,fireT=0;const MO=['🐺','🐗','🐅','🦁','🐻','🐉'],ET={};
+function emo(e){if(!ET[e]){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.font='100px serif';x.textAlign='center';x.textBaseline='middle';x.fillText(e,64,70);ET[e]=new THREE.CanvasTexture(c)}return ET[e]}
+function spawn(){const pl=P.clone().applyQuaternion(planet.quaternion.clone().invert()),ax=new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).cross(pl).normalize(),pos=pl.clone().applyAxisAngle(ax,(35+Math.random()*15)/R0).setLength(R0+1.2),ev=Math.random()<(info.power==5?.8:.3)*(incT>0?.3:1),s=ev?evil():new THREE.Sprite(new THREE.SpriteMaterial({map:emo(MO[info.aura])}));if(!ev)s.scale.set(2.4,2.4,1);s.position.copy(ev?pos.clone().setLength(R0):pos);planet.add(s);mons.push({s,ev,w:new THREE.Vector3(),hp:(2+info.aura*2)*(ev?1.5:1)})}
+function die(){php=100;S.stones=Math.max(0,S.stones-30);mons.forEach(o=>planet.remove(o.s));mons=[];msg('氣血耗盡，你被送回槎上調息，損失 30 靈石。');save();ui()}
+function fight(dt){const pl=P.clone().applyQuaternion(planet.quaternion.clone().invert()),act=crisisLeft>0&&crisisLeft<crisisN&&!crFail;
+  spT+=dt;hurt-=dt;shootT-=dt;fireT-=dt;buffT-=dt;incT-=dt;spdT-=dt;atkT-=dt;partyT-=dt;snapT-=dt;if(snapT<=0){snapT=20+Math.random()*20;wantSnap=true}if(partyT<=0){partyT=4;partyN++;if(has(0)){const t=mons.filter(o=>o.w.distanceTo(P)<24).sort((a,b)=>a.w.distanceTo(P)-b.w.distanceTo(P))[0];if(t){dmg(t,1.5+lvl()*.3);puff(t.w.clone(),1,1,.4,2)}}if(has(4)&&partyN%2==0)php=Math.min(100,php+10)}ghs=ghs.filter(g=>{g.life-=dt;if(g.life<=0){scene.remove(g.m);return false}const o=(g.b||.4)*g.life/(g.max||.28);g.m.traverse(c=>{if(c.material)c.material.opacity=o});if(g.gr)g.m.scale.setScalar(g.s0+g.gr*(1-g.life/g.max));return true});if((S.sw||0)>=4&&fireT<=0&&mons.length){fireT=6;mons.slice().forEach(o=>dmg(o,3));msg('天火降下：星火燎原！')}if(spT>(act?3:Math.max(4,10-info.aura))&&mons.length<2+info.aura+(act?3:0)+(info.crisis==1?2:0)){spT=0;spawn()}
+  mons.forEach(o=>{const mp=o.s.position;mp.applyAxisAngle(mp.clone().cross(pl).normalize(),dt*(.022+info.aura*.003));o.s.getWorldPosition(o.w);if(o.ev)orient(o.s,pl);
+    if(o.w.distanceTo(P)<1.8&&hurt<=0){hurt=.9;snd('hurt');if(shield>0)shield--;else php-=Math.max(4,12+info.aura*2-S.hull*2-(S.arm||0)*2)*(has(2)?.75:1)}});
+  if(php<=0){if((S.inv&&S.inv.pill)>0){S.inv.pill--;php=100;msg('回氣丹救了你一命。');save()}else{die();return}}
+  if(shootT<=0){const tr=(S.sw||0),ls=mons.filter(o=>o.w.distanceTo(P)<24).sort((a,b)=>a.w.distanceTo(P)-b.w.distanceTo(P));if(ls.length){shootT=.65;(tr==1||tr==4?[0,1]:[0]).forEach(k=>{const t=ls[Math.min(k,ls.length-1)],m=makeBlade(tr);m.position.set(P.x+(k?.4:0),P.y+1.2,P.z);scene.add(m);bullets.push({m,t,tr})})}}
+  bullets=bullets.filter(b=>{if(!mons.includes(b.t)){scene.remove(b.m);return false}const d=b.t.w.clone().sub(b.m.position),l=d.length();
+    if(l<1.4){hit(b);scene.remove(b.m);return false}
+    b.m.lookAt(b.t.w);b.tt=(b.tt||0)-dt;if(b.tr>0&&b.tt<=0){if(b.tr>=2){b.tt=.03;b.m.children.forEach(c=>{const p=new THREE.Vector3();c.getWorldPosition(p);p.x+=(Math.random()-.5)*.2;p.y+=(Math.random()-.5)*.2;puff(p,b.tr,.7,.6,1.6)})}else{b.tt=b.tr>1?.025:.06;const gm=makeBlade(b.tr,true);gm.position.copy(b.m.position);gm.quaternion.copy(b.m.quaternion);scene.add(gm);ghs.push({m:gm,life:.28})}}b.m.position.add(d.multiplyScalar(Math.min(1,52*dt/l)));return true});
+  if(!mons.some(o=>o.w.distanceTo(P)<25))php=Math.min(100,php+dt*4);
+  const e=$('hp');if(e)e.textContent=Math.ceil(php)}
+function dailySeed(){const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()}
+function startDaily(){if(busy)return;daily=true;dDone=false;dT=0;build(dailySeed(),false);msg('每日挑戰：採齊靈材、化解危機、修復渡口，越快越好。當天種子全球相同。')}
+$('daily').onclick=startDaily;$('jr').onclick=()=>{if(!busy)journal()};
+function journal(){const c=document.createElement('canvas');c.width=600;c.height=800;const x=c.getContext('2d');x.fillStyle='#0d2230';x.fillRect(0,0,600,800);x.fillStyle='#7ee0c0';x.font='bold 44px serif';x.fillText((S.hero?S.hero.name+'・':'')+'歷練手札',40,80);x.fillStyle='#f1ecdc';x.font='26px serif';x.fillText('境界：'+REALM[lvl()]+'　靈石 '+S.stones,40,140);x.fillText('槎身 '+S.hull+'　帆 '+S.sail+'　羅盤 '+S.comp+'　武器 '+GNm(S.wpn||0)+'　護具 '+GNm(S.arm||0),40,184);
+  (S.log||[]).forEach((l,i)=>{const r=roll(l.seed);x.fillText('S-'+String(l.seed).padStart(4,'0')+' '+l.name+' '+N.aura[r.aura]+'・'+N.land[r.land]+'・'+N.crisis[r.crisis],40,250+i*52)});
+  x.fillStyle='#a9bcc0';x.font='22px serif';x.fillText('今日挑戰種子 '+dailySeed()+(S.dbest?'　最佳 '+S.dbest.t+' 秒':''),40,740);
+  const im=new Image();im.src=c.toDataURL('image/png');im.style.cssText='width:100%;border-radius:8px;margin-top:8px';
+  const d=dlg('<b>歷練手札</b><br><span style="color:var(--dim)">長按圖片即可儲存分享</span>',[['關閉',shut]]);d.insertBefore(im,d.querySelector('.r'))}
+function xian(rb,tr,hr,cr){const g=new THREE.Group(),L=c=>new THREE.MeshLambertMaterial({color:c,flatShading:true}),add=(geo,c,x,y,z,rx,rz)=>{const m=new THREE.Mesh(geo,L(c));m.position.set(x,y,z);if(rx)m.rotation.x=rx;if(rz)m.rotation.z=rz;g.add(m);return m};
+  add(new THREE.CylinderGeometry(.24,.52,1,12),rb,0,.5,0);add(new THREE.CylinderGeometry(.27,.24,.5,10),rb,0,1.2,0);add(new THREE.TorusGeometry(.26,.06,6,14),tr,0,.98,0,Math.PI/2);
+  add(new THREE.BoxGeometry(.16,.55,.26),rb,.4,1,0,0,.45);add(new THREE.BoxGeometry(.16,.55,.26),rb,-.4,1,0,0,-.45);
+  add(new THREE.BoxGeometry(.34,.9,.14),hr,0,1.2,-.2);add(new THREE.SphereGeometry(.24,12,10),0xffd9b0,0,1.68,0);add(new THREE.SphereGeometry(.26,10,8),hr,0,1.76,-.06);add(new THREE.SphereGeometry(.12,8,6),hr,0,2.04,-.04);
+  add(new THREE.CylinderGeometry(.08,.1,.1,8),cr,0,2.0,.02);add(new THREE.CylinderGeometry(.015,.015,.5,4),cr,0,2.06,0,0,Math.PI/2);
+  add(new THREE.BoxGeometry(.08,.7,.02),tr,.15,.8,-.3,-.3);add(new THREE.BoxGeometry(.08,.7,.02),tr,-.15,.8,-.3,-.3);
+  add(new THREE.SphereGeometry(.03,6,6),0x222222,.09,1.7,.21);add(new THREE.SphereGeometry(.03,6,6),0x222222,-.09,1.7,.21);return g}
+function hall(w,h,wc,rc,lv){const g=new THREE.Group(),L=c=>new THREE.MeshLambertMaterial({color:c,flatShading:true}),bs=new THREE.Mesh(new THREE.BoxGeometry(w*1.3,.3,w*1.3),L(0xb8b2a4));bs.position.y=.15;g.add(bs);let y=.3;
+  for(let i=0;i<lv;i++){const s=w*(1-i*.2),b=new THREE.Mesh(new THREE.BoxGeometry(s,h,s),L(wc));b.position.y=y+h/2;g.add(b);
+    for(const[a,c]of[[1,1],[1,-1],[-1,1],[-1,-1]]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,h,6),L(0xa8322d));p.position.set(a*s/2,y+h/2,c*s/2);g.add(p)}
+    const r=new THREE.Mesh(new THREE.ConeGeometry(s*.95,h*.7,4),L(rc));r.rotation.y=Math.PI/4;r.position.y=y+h+h*.35;g.add(r);y+=h+h*.6}return g}
+function town(R,pw){const C=[[0xc9b38a,0x5a4a3a],[0xe8dcc0,0x2f6f66],[0xdfe6ee,0x35506a],[0xb0553a,0x2a2a30],[0xa88a5a,0x6b8a4a],[0x4a3a5a,0x1c1426]][pw];
+  for(let i=0;i<6;i++){const h=hall(2.6+R()*1.2,1.8+R()*.6,C[0],C[1],1);place(h,rdir(R,.93,.985),0);h.rotateY(R()*6)}
+  place(hall(3.4,1.7,C[0],C[1],pw==2||pw==5?4:3),rdir(R,.9,.96),0)}
+$('sail').onclick=()=>{
+  const c=fare();if(S.stones<c){msg('魅兒：靈石不足，還差 '+(c-S.stones)+'。回星球上再採集看看。');return}
+  S.stones-=c;S.visited++;save();daily=false;writeChap(info,Object.assign({done,crisisOk:crisisLeft==0&&!crFail,fixed},EV));EV={};build(nextSeed);
+};
+
+const keys={};let drag=null,vec={x:0,y:0};
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=1);addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
+const cv=$('c');
+cv.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{if(!drag)return;let dx=(e.clientX-drag.x)/60,dy=(e.clientY-drag.y)/60,m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m}vec.x=dx;vec.y=dy});
+const end=()=>{drag=null;vec.x=vec.y=0};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+
+const q=new THREE.Quaternion(),ax=new THREE.Vector3(),wp=new THREE.Vector3();let last=performance.now();
+function loop(now){
+  requestAnimationFrame(loop);const dt=Math.min((now-last)/1000,.05);last=now;
+  let ix=vec.x+((keys.d||keys.arrowright)?1:0)-((keys.a||keys.arrowleft)?1:0);
+  let iy=-vec.y+((keys.w||keys.arrowup)?1:0)-((keys.s||keys.arrowdown)?1:0);
+  const rv=info.crisis==3&&crisisLeft>0&&crisisLeft<crisisN&&!crFail&&Math.floor(now/5000)%2==1;if(rv!=crRev){crRev=rv;if(rv)msg('靈槎失控！操控暫時反轉。')}if(rv){ix=-ix;iy=-iy}
+  const m=Math.hypot(ix,iy);
+  if(m>.05&&!busy){if(m>1){ix/=m;iy/=m}
+    ax.set(iy,0,ix).normalize();q.setFromAxisAngle(ax,Math.min(m,1)*dt*.06*(spdT>0?1.4:1));planet.quaternion.premultiply(q);
+    hero.rotation.y=Math.atan2(ix,-iy);hero.position.y=R0+Math.abs(Math.sin(now/90))*.12;
+  }else hero.position.y=R0;
+  items.forEach(it=>{if(it.gone)return;if(it.t!='npc'&&it.t!='npc2'&&it.t!='portal')it.m.rotation.y+=dt*2;it.m.getWorldPosition(wp);
+    if(it.t=='npc'){if(wp.distanceTo(P)<3.5&&now>npcCD&&!busy)talk();return}
+    if(it.t=='npc2'){if(wp.distanceTo(P)<3.5&&now>npcCD&&!busy)talk2(it.i);return}
+    if(it.t=='bad'){const c=info.crisis,mp=it.m.position;
+      if(c==0){it.ax=it.ax||new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize();mp.applyAxisAngle(it.ax,dt*.04)}
+      else if(c==1){const pl=P.clone().applyQuaternion(planet.quaternion.clone().invert());mp.applyAxisAngle(mp.clone().cross(pl).normalize(),dt*.025)}
+      else if(c==2){const pl=P.clone().applyQuaternion(planet.quaternion.clone().invert());it.m.visible=mp.distanceTo(pl)<20}
+      else if(c==4){it.tm=(it.tm===undefined?12:it.tm)-dt;if(it.tm<0){it.tm=12;mp.applyAxisAngle(new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize(),.2+Math.random()*.3);msg('對手搶先挪走了一處目標！')}}
+      else if(c==5){const nx=it.k==crisisN-crisisLeft;it.m.material.color.set(nx?0xff5c4d:0x777777);if(!nx)return}}
+    if(it.t=='portal'){if(!fixed&&wp.distanceTo(P)<4&&now>npcCD&&!busy){if(parts<3){msg('魅兒：渡口殘破，還缺陣石（'+parts+'/3）。');npcCD=now+4000}else{fixed=true;gain(60,100);it.ring.material.color.set(0x7ee0c0);msg('渡口修復！本星解纜免費。');ui()}}return}
+    if(wp.distanceTo(P)<1.5){it.gone=true;planet.remove(it.m);
+      if(it.t=='herb'){herbs++;S.herb=(S.herb||0)+1;gain(6,10);if(herbs==5&&!done){done=true;gain(accepted?30:10,accepted?60:20);msg('魅兒：任務完成！採齊了五份'+N.boon[info.boon]+'。')}}
+      else if(it.t=='part'){parts++;gain(8,12);msg('取得陣石 '+parts+'/3。')}
+      else if(it.t=='chest'){gain(25,40);msg('機緣！你獲得一份「'+N.boon[info.boon]+'」，修真值大增。')}
+      else{if(crisisLeft==crisisN&&CR[info.crisis][2])crT=CR[info.crisis][2];crisisLeft--;if(crisisLeft==0){crT=0;gain(accepted?45:30,accepted?70:50);msg('危機化解：'+N.crisis[info.crisis]+'已平息。')}ui()}
+      ui();}
+    else it.m.scale.setScalar(1+Math.sin(now/300+it.m.id)*.12);
+  });
+  if(crT>0&&!busy){crT-=dt;if(crT<=0){crT=0;crFail=true;S.stones=Math.max(0,S.stones-Math.max(0,30-S.hull*10));items.forEach(i=>{if(i.t=='bad'&&!i.gone){i.gone=true;planet.remove(i.m)}});msg('危機失控：'+N.crisis[info.crisis]+'，損失了一些靈石。');save();ui()}}
+  const ctE=$('ct');if(ctE)ctE.textContent=crT>0?'　'+Math.ceil(crT)+' 秒':'';
+  let best=null,bd=1e9;items.forEach(it=>{if(it.gone||(it.t=='npc'&&accepted)||(it.t=='npc2'&&QS[it.i].st!=2)||(it.t=='portal'&&(parts<3||fixed))||(it.t=='bad'&&((info.crisis==2&&!it.m.visible)||(info.crisis==5&&it.k!=crisisN-crisisLeft))))return;it.m.getWorldPosition(wp);const d=wp.distanceTo(P);if(d<bd){bd=d;best=wp.clone()}});
+  const ar=$('arrow');
+  if(best){const ang=Math.atan2(best.x,-best.z),arc=Math.round(Math.acos(Math.min(1,best.dot(P)/(best.length()*R0)))*R0);$('ai').style.transform='rotate('+ang+'rad)';$('ad').textContent=arc+' 步';ar.style.display='block';const dx=Math.sin(ang),dy=-Math.cos(ang),hw=innerWidth/2-48,hh=innerHeight/2-170,t=Math.min(Math.abs(dx)>1e-3?hw/Math.abs(dx):1e9,Math.abs(dy)>1e-3?hh/Math.abs(dy):1e9);ar.style.transform='translate('+(innerWidth/2+dx*t-32)+'px,'+(innerHeight/2+dy*t-30)+'px)'}else ar.style.display='none';
+  if(!busy)fight(dt);
+  if(daily&&!dDone&&!busy){dT+=dt;const e=$('dt');if(e)e.textContent=dT.toFixed(1)+' 秒';
+    if(done&&fixed&&(crisisLeft==0||crFail)){dDone=true;const t=+(dT+(crFail?15:0)).toFixed(1),k=String(seed);if(!S.dbest||S.dbest.k!=k||t<S.dbest.t)S.dbest={k,t};save();dlg('<b>每日挑戰完成</b><br>種子 '+seed+'<br>成績 '+t+' 秒'+(crFail?'（含危機失敗加罰 15 秒）':'')+'<br>今日最佳 '+S.dbest.t+' 秒',[['手札',journal],['關閉',shut]])}}
+  renderer.render(scene,cam);if(wantSnap)snap();shellUp(now);crestUp(now);partyUp(now);sw.material.color.set(SC[(S.sw||0)]);
+}
+
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const SW=['劍氣化形','劍氣化形・分光','劍氣化霧','化霧・天火','化霧・星火燎原'],FL=['','初燃','凝焰','真焰','紫極天焰'],SC=[0xffe08a,0x9fe6ff,0xc79bff,0xff7a2a,0xff4fd8];
+function dmg(o,d){o.hp-=d;if(o.hp<=0&&mons.includes(o)){planet.remove(o.s);mons=mons.filter(q=>q!==o);qEv(o.ev?'evil':'beast',1);gain((5+info.aura*2)*(o.ev?2:1),(8+info.aura*3)*(o.ev?2:1))}}
+function hit(b){const t=b.t,d=(1+lvl()*.5+(S.wpn||0)*.5)*(atkT>0?1.5:1);if(b.tr>=2){php=Math.min(100,php+1.5);for(let i=0;i<5;i++){const q=t.w.clone();q.x+=(Math.random()-.5)*.8;q.y+=(Math.random()-.5)*.8;puff(q,b.tr,1.2,.6,3)}}if(b.tr>=3)mons.slice().forEach(o=>{if(o!==t&&o.w.distanceTo(t.w)<6)dmg(o,d*.6)});dmg(t,d)}
+const sw=new THREE.Mesh(new THREE.BoxGeometry(.09,1.2,.04),new THREE.MeshBasicMaterial({color:0xffe08a}));sw.position.set(.55,1.1,.05);sw.rotation.z=-.35;hero.add(sw);const sh=new THREE.Group(),shM=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.9});[[.262,.54,1.02,.5],[.282,.25,.54,1.2]].forEach(a=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(a[0],a[1],a[2],18,1,true),shM);m.position.y=a[3];sh.add(m)});hero.add(sh);
+function setHero(){hero.children.slice().forEach(c=>{if(c!==sw&&c!==sh)hero.remove(c)});hero.add(S.hero&&S.hero.g?xian(0xf6e3ec,0xb04f86,0x2a1a2e,0xf0a0c8):xian(0xf1ecdc,0x2f6f66,0x1b1b22,0xf0c668));ui()}
+function create(){let g=0,ed=false;const d=dlg('<b>建立角色</b><br>選擇性別並為主角命名<br><span id="gs" style="color:var(--jade)">目前：男</span><br><input id="nm" maxlength="8" value="張三" style="margin-top:8px;width:100%;box-sizing:border-box;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--fg)">',[['男',()=>sg(0)],['女',()=>sg(1)],['出發',()=>{S.hero={g,name:(nm.value.trim()||(g?'李四':'張三')).slice(0,8)};save();setHero();shut();mei('我是魅兒，你的導覽小妖精！點我隨時有提示。');setTimeout(()=>mei('吸星劍會自動攻擊，境界越高招式越強；紫焰心可在煉器時進化。'),5000)}]]),nm=d.querySelector('#nm');
+  nm.oninput=()=>{ed=true};function sg(x){g=x;d.querySelector('#gs').textContent='目前：'+(x?'女':'男');if(!ed)nm.value=x?'李四':'張三'}}
+let mtm,tp=0;function mei(t){const e=$('mt');e.textContent='魅兒：'+t;e.style.display='block';clearTimeout(mtm);mtm=setTimeout(()=>e.style.display='none',7000)}
+function tip(){if(!S.hero)return;let t;
+  if(herbs<5)t='先採齊 5 份'+N.boon[info.boon]+'（還差 '+(5-herbs)+' 份），跟著畫面邊緣的箭頭走。';
+  else if(crisisLeft>0&&!crFail)t='化解'+N.crisis[info.crisis]+'：碰觸紅色目標，還剩 '+crisisLeft+' 處。';
+  else if(parts<3)t='去找陣石（'+parts+'/3），集齊才能修復渡口。';
+  else if(!fixed)t='走到渡口的光環旁修復它，之後解纜免費。';
+  else t='本星任務完成！可以按「解纜」出發，或找煉器師煉器。';
+  const ex=['吸星劍會自動攻擊，境界越高招式越強。','紫焰心可在煉器時進化，更容易煉出高品階。','怪物靠太近會受傷，往別處走就能脫身。','灰衣邪修比一般妖獸更強，擊敗可得雙倍獎勵。','練製能做丹藥符籙；和各星球的居民交談，可以邀請他們同行。','吸星劍要在「練製」裡淬煉才會升級，煉器沒有等級上限。'];
+  mei(t+(tp++%2?'　'+ex[tp%6]:''))}
+$('mb').onclick=()=>{ac();tip()};
+function evolve(){const f=S.fl||1;if(f>=4){dlg('紫焰心已臻圓滿「'+FL[4]+'」。',[['好',shut]]);return}const need=80*f,lv=2*f;
+  if(lvl()<lv||S.stones<need){dlg('紫焰心進化為「'+FL[f+1]+'」需要境界達「'+REALM[lv]+'」並花費 '+need+' 靈石。<br>目前境界：'+REALM[lvl()]+'・靈石 '+S.stones,[['好',shut]]);return}
+  S.stones-=need;S.fl=f+1;save();ui();snd('up');dlg('紫焰心進化為「'+FL[S.fl]+'」！煉器金區更寬，更有機會煉出更高品階。',[['好',shut]])}
+
+const PT={};let shL=-1;
+function patTex(l){if(PT[l])return PT[l];const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.strokeStyle=x.fillStyle=PAL[l];x.lineWidth=3;
+  const ln=(a,b,d,e)=>{x.beginPath();x.moveTo(a,b);x.lineTo(d,e);x.stroke()},ci=(a,b,r,f)=>{x.beginPath();x.arc(a,b,r,0,6.283);f?x.fill():x.stroke()},C=[[32,32],[96,32],[32,96],[96,96]];
+  const dia=()=>C.forEach(k=>{x.beginPath();x.moveTo(k[0],k[1]-28);x.lineTo(k[0]+28,k[1]);x.lineTo(k[0],k[1]+28);x.lineTo(k[0]-28,k[1]);x.closePath();x.stroke()});
+  if(l==0)for(let i=0;i<10;i++)ci(10+(i*37)%108,12+(i*53)%104,3,1);
+  else if(l==1)[20,64,108].forEach(y=>ln(0,y,128,y));
+  else if(l==2)[16,48,80,112].forEach(a=>{x.beginPath();x.moveTo(a,0);x.bezierCurveTo(a+14,40,a-14,88,a,128);x.stroke()});
+  else if(l==3){dia();C.forEach(k=>ci(k[0],k[1],3,1))}
+  else if(l==4)C.forEach(k=>{ci(k[0],k[1],22,0);ci(k[0],k[1],6,1)});
+  else if(l==5)[[32,32],[96,96]].forEach(k=>{x.beginPath();for(let t=0;t<12;t+=.2){const r=t*2.1;x.lineTo(k[0]+Math.cos(t)*r,k[1]+Math.sin(t)*r)}x.stroke()});
+  else if(l==6)for(let r=0;r<4;r++)for(let q=0;q<4;q++){x.beginPath();x.arc(q*32+(r%2)*16+16,r*32+14,15,0,Math.PI);x.stroke()}
+  else if(l==7)[24,88].forEach(a=>{x.beginPath();x.moveTo(a,0);for(let y=16;y<=128;y+=16)x.lineTo(a+(y/16%2?14:-14),y);x.stroke()});
+  else{dia();C.forEach(k=>{ci(k[0],k[1],10,0);ci(k[0],k[1],2,1)});ln(0,64,128,64);ln(64,0,64,128)}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,2);return PT[l]=t}
+function shellUp(t){const l=lvl();if(l!=shL){shL=l;shM.map=patTex(l);shM.needsUpdate=true}shM.map.offset.y=(t/5000)%1;shM.opacity=.7+Math.sin(t/300)*.2}
+
+const CT={};let crL=0;
+function crestTex(f){if(CT[f])return CT[f];const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
+  const g=x.createRadialGradient(64,64,0,64,64,60);g.addColorStop(0,'#c77dff88');g.addColorStop(1,'#9a3cff00');x.fillStyle=g;x.fillRect(0,0,128,128);
+  x.strokeStyle='#e0a8ff';x.lineWidth=3;x.beginPath();x.arc(64,64,52,0,6.283);x.stroke();
+  if(f>=3){x.lineWidth=2;x.beginPath();x.arc(64,64,44,0,6.283);x.stroke()}
+  if(f>=4){x.fillStyle='#fff';for(let i=0;i<12;i++){const a=i*.5236;x.beginPath();x.arc(64+Math.cos(a)*58,64+Math.sin(a)*58,2.5,0,6.283);x.fill()}}
+  const n=f==1?1:f==2?3:f==3?5:7;x.fillStyle='#b44cff';x.strokeStyle='#f3d6ff';x.lineWidth=2.5;
+  for(let i=0;i<n;i++){const a=n==1?0:(i/(n-1)-.5)*(f==2?1.3:2.2),len=n==1?34:(i==(n-1)/2?36:26);x.save();x.translate(64,80);x.rotate(a);x.beginPath();x.moveTo(0,0);x.quadraticCurveTo(-13,-len*.55,0,-len);x.quadraticCurveTo(13,-len*.55,0,0);x.fill();x.stroke();x.restore()}
+  x.fillStyle='#fff';x.beginPath();x.arc(64,80,5,0,6.283);x.fill();return CT[f]=new THREE.CanvasTexture(c)}
+const crM=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}),cr=new THREE.Mesh(new THREE.PlaneGeometry(.44,.44),crM);cr.position.set(0,1.3,.3);sh.add(cr);
+function crestUp(t){const f=S.fl||1;if(f!=crL){crL=f;crM.map=crestTex(f);crM.needsUpdate=true}crM.opacity=.75+Math.sin(t/140)*.25;cr.scale.setScalar(1+Math.sin(t/200)*.06)}
+
+let ghs=[],MT=null;function mistTex(){if(MT)return MT;const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'#fff');g.addColorStop(.4,'#ffffff88');g.addColorStop(1,'#ffffff00');x.fillStyle=g;x.fillRect(0,0,64,64);return MT=new THREE.CanvasTexture(c)}
+function puff(p,tr,sz,life,gr){const m=new THREE.Sprite(new THREE.SpriteMaterial({map:mistTex(),color:SC[tr],transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));m.position.copy(p);m.scale.setScalar(sz);scene.add(m);ghs.push({m,life,max:life,b:.5,s0:sz,gr})}
+const BG=[new THREE.BoxGeometry(.05,.012,.9),new THREE.ConeGeometry(.035,.28,4),new THREE.BoxGeometry(.22,.02,.04)];
+function makeBlade(tr,gh){if(tr>=2&&!gh){const mg=new THREE.Group(),k=tr<4?3:5;for(let i=0;i<k;i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:mistTex(),color:SC[tr],transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));sp.scale.setScalar(.9);sp.position.x=(i-(k-1)/2)*.34;mg.add(sp)}return mg}const g=new THREE.Group(),n=tr<2?1:tr<4?3:5;
+  for(let i=0;i<n;i++){const k=i-(n-1)/2,b=new THREE.Group(),mt=new THREE.MeshBasicMaterial({color:SC[tr],transparent:!!gh,opacity:gh?.4:1,blending:THREE.AdditiveBlending,depthWrite:false}),
+    bl=new THREE.Mesh(BG[0],mt),tp=new THREE.Mesh(BG[1],mt),hl=new THREE.Mesh(BG[2],mt);
+    tp.rotation.x=Math.PI/2;tp.position.z=.58;hl.position.z=-.45;b.add(bl,tp,hl);b.position.x=k*.34;b.rotation.y=k*.12;g.add(b)}
+  return g}
+
+const Y3=new THREE.Vector3(0,1,0),Z3=new THREE.Vector3(0,0,1);
+function orient(s,pl){const n=s.position.clone().normalize(),q0=new THREE.Quaternion().setFromUnitVectors(Y3,n),z=Z3.clone().applyQuaternion(q0),f=pl.clone().sub(n.clone().multiplyScalar(pl.dot(n))).normalize(),a=Math.atan2(n.dot(z.clone().cross(f)),z.dot(f));s.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(n,a).multiply(q0))}
+function evil(){const g=new THREE.Group(),f=Math.random()<.5,m=f?xian(0x9a9aa2,0x4a2a5a,0x15101a,0x8a3050):xian(0x8a8a92,0x3a3a46,0x121216,0x6a2a2a);m.scale.setScalar(.9);g.add(m);
+  const e=new THREE.Sprite(new THREE.SpriteMaterial({map:mistTex(),color:0xaa1122,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));e.scale.setScalar(2.2);e.position.y=1.2;g.add(e);return g}
+
+let buffT=0,shield=0,incT=0,spdT=0,atkT=0,partyT=0,partyN=0,tms=[];
+const has=k=>(S.party||[]).includes(k);
+const RC=[['pill','回氣丹',20,2,'氣血歸零時自動服用，回滿氣血'],['xp','聚靈符',30,1,'使用後 90 秒修真值 ×1.5'],['shd','護體符',40,0,'使用後擋下接下來 3 次傷害'],['inc','避邪香',25,1,'使用後 120 秒邪修大幅減少'],['spd','疾行符',25,0,'使用後 60 秒移動速度提升'],['atk','劍意符',35,1,'使用後 60 秒劍影傷害 ×1.5']];
+function craft(){S.inv=S.inv||{};const iv=S.inv,btn=[];
+  RC.forEach(r=>btn.push([r[1]+'（'+r[2]+'靈石'+(r[3]?'＋靈草'+r[3]:'')+'）',()=>{if(S.stones<r[2]||(S.herb||0)<r[3])msg('材料不足。');else{S.stones-=r[2];S.herb=(S.herb||0)-r[3];iv[r[0]]=(iv[r[0]]||0)+1;qEv('craft',1);save();ui();snd('ok')}craft()}]));
+  RC.slice(1).forEach(r=>{if(iv[r[0]]>0)btn.push(['使用'+r[1]+'（'+iv[r[0]]+'）',()=>{iv[r[0]]--;if(r[0]=='xp')buffT=90;if(r[0]=='shd')shield=3;if(r[0]=='inc')incT=120;if(r[0]=='spd')spdT=60;if(r[0]=='atk')atkT=60;save();snd('up');msg(r[1]+'生效。');craft()}])});
+  btn.push(['煉製裝備',forge],['淬煉吸星劍',()=>forgeGo('sw')],['槎具強化',yard],['隊友',party],['離開',shut]);
+  dlg('<b>練製</b>　靈石 '+S.stones+'　靈草 '+(S.herb||0)+'<br><span style="color:var(--dim)">'+RC.map(r=>r[1]+'：'+r[4]).join('<br>')+'<br>現有：'+RC.map(r=>r[1]+' '+(iv[r[0]]||0)).join('・')+'</span>',btn)}
+$('yard').onclick=()=>{if(!busy)craft()};
+const TA=['每 4 秒射出一道劍影','靈石收益 +20%','受到的傷害 -25%','煉器金區加寬','每 8 秒回復 10 氣血','修真值收益 +20%'],TC=[[0xc9b38a,0x5a4a3a],[0xe8dcc0,0x2f6f66],[0xdfe6ee,0x35506a],[0xb0553a,0x2a2a30],[0xa88a5a,0x6b8a4a],[0x6a5a8a,0x1c1426]],OFF=[[-1.5,.9],[1.5,.9],[0,1.9]];
+function syncParty(){tms.forEach(m=>scene.remove(m));tms=(S.party||[]).map((k,i)=>{const m=xian(TC[k][0],TC[k][1],0x1b1b22,0xd0b070);m.scale.setScalar(.65);m.userData.o=OFF[i];scene.add(m);return m})}
+function partyUp(t){tms.forEach((m,i)=>{const o=m.userData.o;m.position.set(P.x+o[0],hero.position.y+Math.sin(t/200+i)*.02,P.z+o[1]);m.rotation.y=hero.rotation.y})}
+function recruit(){S.party=S.party||[];const k=info.power;if(has(k)){S.party=S.party.filter(x=>x!=k);msg(NPC[k][0]+'辭別而去。')}else if(S.party.length>=3)msg('隊伍已滿（最多 3 位）。');else if(S.stones<60)msg('邀請需要 60 靈石。');else{S.stones-=60;S.party.push(k);msg(NPC[k][0]+'加入隊伍：'+TA[k]+'。');snd('up')}save();ui();syncParty();shut()}
+function party(){const p=S.party||[];dlg('<b>隊友</b>（'+p.length+'/3）<br><span style="color:var(--dim)">'+(p.length?p.map(k=>NPC[k][0]+'：'+TA[k]).join('<br>'):'尚無隊友。到不同星球找不同的人，各有專長。')+'</span>',p.map(k=>['辭別'+NPC[k][0],()=>{S.party=S.party.filter(x=>x!=k);save();ui();syncParty();msg(NPC[k][0]+'辭別而去。');party()}]).concat([['返回',craft],['離開',shut]]))}
+syncParty();
+
+const PN=['雲岫','顧寒山','白芷','鍾離燼','蘇小滿','墨玄','青鸞','陸沉舟','阿朔','林霽','洛昭','燕無歸'],RO=['藥農','獵戶','鑄劍匠','丹師','巡山修士','客棧老闆','守塔人','遊方道人'],NC=[[0x6a8a5a,0x2a3a22],[0x8a5a3a,0x2a1c14],[0xb0553a,0x2a2a30],[0xa08adc,0x3a2a66],[0x5a7a9a,0x1c2a3a],[0xc9a85a,0x4a3a1a],[0x7a7a8a,0x2a2a33],[0x4a8a7a,0x1a3a33]];
+const QT=[['beast','擊退妖獸'],['evil','討伐邪修'],['forgeW','煉製武器'],['forgeA','煉製護具'],['alch','煉製丹藥'],['craft','練製道具'],['deliver','繳納靈草']];
+const LN={beast:n=>'妖獸鬧得我睡不著，請替我擊退 '+n+' 隻。',evil:n=>'附近有灰衣邪修出沒，請替我討伐 '+n+' 名。',forgeW:()=>'我需要一件像樣的兵刃，請到煉器對話裡替我煉製一件武器。',forgeA:()=>'請替我煉製一件護具，我想防身。',alch:()=>'有個病人等著用藥，請替我煉成一爐丹（採藥、煉丹小遊戲）。',craft:()=>'想請你在「練製」裡做一件丹藥或符籙。',deliver:n=>'我的藥簍空了，能給我 '+n+' 份靈草嗎？'};
+let QS=[];
+function genQuests(R){QS=[];const r=mb(seed*31+7),a=info.aura;
+  for(let i=0;i<2;i++){const ri=Math.floor(r()*8),ni=Math.floor(r()*12);let qi=Math.floor(r()*7);if(i&&QS[0].k==QT[qi][0])qi=(qi+1)%7;const k=QT[qi][0];
+    const m=xian(NC[ri][0],NC[ri][1],0x1b1b22,0xd0b070);m.scale.setScalar(.85);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:emo('❗')}));sp.scale.set(1.2,1.2,1);sp.position.y=2.9;m.add(sp);place(m,rdir(R,.9,.995),0);items.push({m,t:'npc2',i,sp});
+    QS.push({k,title:QT[qi][1],need:{beast:4+a,evil:2+(a>>1),forgeW:1,forgeA:1,alch:1,craft:1,deliver:3}[k],have:0,st:0,name:RO[ri]+'・'+PN[ni],xp:30+a*10,sd:40+a*10})}}
+function qEv(k,n){EV[k]=(EV[k]||0)+n;QS.forEach(q=>{if(q.st==1&&q.k==k){q.have=Math.min(q.need,q.have+n);if(q.have>=q.need){q.st=2;msg('魅兒：支線「'+q.title+'」完成，回去找'+q.name+'領賞吧。')}}});ui()}
+function questTxt(){items.forEach(it=>{if(it.t=='npc2'&&it.sp)it.sp.material.map=emo(['❗','⏳','❓','✔️'][QS[it.i].st])});return QS.filter(q=>q.st==1||q.st==2).map(q=>'<br>【支線】'+q.title+' <em>'+q.have+'/'+q.need+'</em>').join('')}
+function talk2(i){const q=QS[i];if(!q)return;const b=[];let tx='<b>'+q.name+'</b><br>';
+  if(q.st==0){tx+=LN[q.k](q.need)+'<br><span style="color:var(--dim)">【支線】'+q.title+'　獎勵：修真值 '+q.xp+'・靈石 '+q.sd+'</span>';b.push(['接下任務',()=>{q.st=1;ui();shut()}])}
+  else if(q.st==1){tx+='任務進行中：'+q.title+'（'+q.have+'/'+q.need+'）';if(q.k=='deliver')b.push(['交付靈草（持有 '+(S.herb||0)+'）',()=>{if((S.herb||0)>=q.need){S.herb-=q.need;q.have=q.need;q.st=2;save();msg('魅兒：靈草已交付，可以領賞了。');ui();talk2(i)}else{msg('靈草不足。');}}])}
+  else if(q.st==2){tx+='辛苦了，這是答謝。';b.push(['領取獎勵',()=>{q.st=3;(EV.qd=EV.qd||[]).push(q.title);gain(q.xp,q.sd);msg('支線完成：'+q.title+'。');ui();shut()}])}
+  else tx+='多謝你，改日再會。';
+  b.push(['離開',shut]);dlg(tx,b)}
+
+let EV={};
+function fbChap(n,h,inf,ev,pn){const a=[],nm=h.name,pr=h.g?'她':'他';
+  a.push(nm+'乘槎抵達'+inf.name+'。此地'+N.land[inf.land]+'連綿，靈氣'+N.aura[inf.aura]+'，空氣裡壓著'+N.crisis[inf.crisis]+'將至的沉悶。');
+  if(ev.beast)a.push('一路上，'+pr+'以吸星劍「'+SW[S.sw||0]+'」擊退了 '+ev.beast+' 隻妖獸，劍光所過之處，靈氣隨之流轉。');
+  if(ev.evil)a.push('途中遇上灰衣邪修，'+pr+'與其交手，終將 '+ev.evil+' 名邪修逐出此地。');
+  if(ev.forgeW||ev.forgeA||ev.sword)a.push('夜裡'+pr+'守著胸口的紫焰心，'+(ev.sword?'淬煉吸星劍，':'')+(ev.forgeW?'錘煉兵刃，':'')+(ev.forgeA?'鍛造護具，':'')+'火光映著側臉。');
+  if(ev.alch||ev.craft)a.push(pr+'也趁隙煉了丹藥與符籙，備著日後之用。');
+  if(ev.qd&&ev.qd.length)a.push('此星居民託付之事，'+pr+'一一辦妥：'+ev.qd.join('、')+'。');
+  if(pn!='無')a.push('同行的'+pn+'默默相伴，一行人未曾言退。');
+  a.push('離開時，'+inf.name+'漸遠。'+nm+'望著境界「'+REALM[lvl()]+'」的靈光，知道前路仍遠。');
+  return{title:inf.name+'行',text:a.join('\n\n')}}
+async function getSampler(){
+  try{if(window.claude){const sm=await window.claude.use('sample');if(sm)return sm}}catch(e){}
+  if(!window.puter)return null;
+  return async(prompt)=>{
+    try{if(!puter.auth.isSignedIn())await puter.auth.signIn()}catch(e){throw e}
+    const r=await puter.ai.chat(prompt,{model:'claude-sonnet-4-5'});
+    const t=typeof r==='string'?r:(r&&r.message&&r.message.content&&r.message.content[0]&&r.message.content[0].text)||(r&&r.text)||(r&&r.message&&typeof r.message.content==='string'&&r.message.content)||'';
+    return{text:t}}}
+async function writeChap(inf,ev){
+  const L=S.novel=S.novel||[],n=L.length+1,h=S.hero||{g:0,name:'張三'},pn=(S.party||[]).map(k=>NPC[k][0]).join('、')||'無',pv=L[L.length-1];
+  msg('魅兒：正在把這段旅程寫成小說…');
+  const facts='主角：'+h.name+'（'+(h.g?'女':'男')+'）；境界：'+REALM[lvl()]+'；吸星劍：'+SW[S.sw||0]+'；紫焰心：'+FL[S.fl||1]+'；隊友：'+pn+'\n星球：'+inf.name+'（地貌'+N.land[inf.land]+'，靈氣'+N.aura[inf.aura]+'，危機'+N.crisis[inf.crisis]+'，委託人身分'+NPC[inf.power][0]+'）\n事件：擊退妖獸 '+(ev.beast||0)+' 隻；討伐灰衣邪修 '+(ev.evil||0)+' 名；煉製武器 '+(ev.forgeW||0)+' 次、護具 '+(ev.forgeA||0)+' 次、丹藥 '+(ev.alch||0)+' 次、符籙道具 '+(ev.craft||0)+' 次、淬煉吸星劍 '+(ev.sword||0)+' 次；主線靈材'+(ev.done?'已採齊':'未完成')+'；危機'+(ev.crisisOk?'已化解':'未化解')+'；渡口'+(ev.fixed?'已修復':'未修復')+'；完成的居民委託：'+((ev.qd||[]).join('、')||'無');
+  let r=null;
+  try{const sm=await getSampler();if(sm){const o=await sm('你是修真長篇小說作者，文風飄逸、節奏明快。請依下列遊戲紀錄寫「第 '+n+' 集」，繁體中文，650 到 900 字，內容原創，不得使用任何現有小說的角色名與專有設定。第一行是標題（不加符號與集數），空一行後是正文，並自然融入所有事件、與前情銜接。\n【前情】'+(pv?'第 '+pv.n+' 集《'+pv.title+'》：'+pv.text.slice(0,200):'（開篇）')+'\n【本集紀錄】\n'+facts,{modelTier:'default',cache:false});const t=(o.text||'').trim().split('\n');const ti=t[0].replace(/^[#\s第\d集：:・\-]+/,'').slice(0,24),bd=t.slice(1).join('\n').trim();if(bd.length>150)r={title:ti||('第 '+n+' 集'),text:bd}}}catch(e){}
+  if(!r)r=fbChap(n,h,inf,ev,pn);
+  L.push({n,title:r.title,text:r.text,planet:inf.name,realm:REALM[lvl()],date:new Date().toISOString().slice(0,10)});S.novel=L;save();msg('魅兒：第 '+n+' 集《'+r.title+'》已寫入小說。')}
+let rdN=0;
+function reader(i){const L=S.novel||[];if(!L.length){dlg('尚無章節。每離開一顆星球，魅兒就會把這段旅程寫成一集。',[['關閉',shut]]);return}
+  rdN=i==null?L.length-1:Math.max(0,Math.min(L.length-1,i));const c=L[rdN];
+  dlg('<b>第 '+c.n+' 集：'+esc(c.title)+'</b>（'+(rdN+1)+'/'+L.length+'）<div style="max-height:46vh;overflow-y:auto;white-space:pre-wrap;line-height:1.8;margin-top:8px;font-size:14px;user-select:text;-webkit-user-select:text">'+esc(c.text)+'</div>',[['上一集',()=>reader(rdN-1)],['下一集',()=>reader(rdN+1)],['匯出',exportMenu],['關閉',shut]])}
+async function dlNovel(){await saveF('浮槎紀小說.txt',(S.novel||[]).map(c=>'第 '+c.n+' 集　'+c.title+'\n\n'+c.text).join('\n\n————\n\n'))}
+$('nv').onclick=()=>{
+  try{if(window.puter&&!window.claude&&!puter.auth.isSignedIn())puter.auth.signIn().catch(()=>{})}catch(e){}
+  if(!busy)reader()};
+
+let wantSnap=false,snapT=12,SH=[];try{SH=JSON.parse(localStorage.getItem('xzp_shots')||'[]')}catch(e){}
+function snap(){wantSnap=false;try{const c=document.createElement('canvas'),r=renderer.domElement,w=960,h=Math.round(w*r.height/r.width);c.width=w;c.height=h;c.getContext('2d').drawImage(r,0,0,w,h);SH.push(c.toDataURL('image/jpeg',.7));if(SH.length>8)SH.splice(Math.floor(Math.random()*SH.length),1);try{localStorage.setItem('xzp_shots',JSON.stringify(SH))}catch(e){SH.splice(0,3)}}catch(e){}}
+function chapMd(c){return '## 第 '+c.n+' 集：'+c.title+'\n\n*星球：'+(c.planet||'未知')+'｜境界：'+(c.realm||'—')+'｜'+(c.date||'—')+'*\n\n'+c.text+'\n'}
+function bookMd(){const L=S.novel||[],h=S.hero||{name:'張三'};return '# 浮槎紀\n\n> 主角：'+h.name+'｜共 '+L.length+' 集\n\n**目錄**\n\n'+L.map(c=>'- 第 '+c.n+' 集：'+c.title).join('\n')+'\n\n---\n\n'+L.map(chapMd).join('\n---\n\n')}
+function ebookHtml(){const L=S.novel||[],h=S.hero||{name:'張三'},img=SH.length?SH[Math.floor(Math.random()*SH.length)]:'';
+  const toc=L.map(c=>'<li><a href="#c'+c.n+'">第 '+c.n+' 集：'+esc(c.title)+'</a></li>').join(''),
+  body=L.map(c=>'<article id="c'+c.n+'"><h2>第 '+c.n+' 集：'+esc(c.title)+'</h2><p class="meta">星球：'+esc(c.planet||'未知')+'｜境界：'+esc(c.realm||'—')+'｜'+esc(c.date||'—')+'</p>'+esc(c.text).split(/\n+/).map(t=>'<p>'+t+'</p>').join('')+'</article>').join('');
+  return '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>浮槎紀</title><style>:root{--bg:#f6f0e0;--fg:#1d2a24;--ac:#2f7d6b}@media(prefers-color-scheme:dark){:root{--bg:#10171a;--fg:#e8efe5;--ac:#6fd3b8}}body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.9 "Noto Serif TC","Songti TC","PMingLiU",serif}main{max-width:36em;margin:0 auto;padding:0 1.2em 4em}header img{width:100%;max-height:50vh;object-fit:cover;display:block}h1{margin:.6em 0 .2em;font-size:2em}h2{color:var(--ac);margin-top:2.4em;border-top:1px solid #8884;padding-top:1em}nav a{color:var(--ac)}p{text-indent:2em;margin:.6em 0}p.meta{text-indent:0;font-size:.8em;opacity:.7}@media print{header img{max-height:30vh}}</style></head><body><header>'+(img?'<img alt="" src="'+img+'">':'')+'</header><main><h1>浮槎紀</h1><p class="meta">主角：'+esc(h.name)+'｜共 '+L.length+' 集</p><nav><ol>'+toc+'</ol></nav>'+body+'</main></body></html>'}
+async function saveF(name,data){
+  try{const d=window.claude&&await window.claude.use('downloads');if(d){await d.save({filename:name,data});return}}catch(e){}
+  const b=data instanceof Blob?data:new Blob([data],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function exportMenu(){if(!(S.novel||[]).length){msg('尚無章節可匯出。');return}dlg('<b>匯出小說</b><br><span style="color:var(--dim)">章節固定格式：「## 第 N 集：標題」，附星球、境界、日期。</span>',[['1. 純 MD 檔',()=>saveF('浮槎紀.md',bookMd())],['2. HTML 電子書',()=>saveF('浮槎紀電子書.html',ebookHtml())],['3. A4 摺頁小冊 PDF（一張紙折成 8 頁）',pdfBook],['返回',()=>reader(rdN)]])}
+const li=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
+const PW=1240,PH=1754,PM=120,PF='"Noto Serif TC","Songti TC","PMingLiU",serif';
+async function coverPg(title,sub,src){const cv=document.createElement('canvas');cv.width=PW;cv.height=PH;const x=cv.getContext('2d'),im=src&&await li(src);
+  if(im){const k=Math.max(PW/im.width,PH/im.height),w=im.width*k,h=im.height*k;x.drawImage(im,(PW-w)/2,(PH-h)/2,w,h)}else{const g=x.createLinearGradient(0,0,0,PH);g.addColorStop(0,'#274a5a');g.addColorStop(1,'#10211c');x.fillStyle=g;x.fillRect(0,0,PW,PH)}
+  const g=x.createLinearGradient(0,PH*.4,0,PH);g.addColorStop(0,'#0000');g.addColorStop(1,'#000c');x.fillStyle=g;x.fillRect(0,PH*.4,PW,PH*.6);
+  x.fillStyle='#fff';x.textAlign='center';x.font='bold 150px '+PF;x.fillText(title,PW/2,PH-340);x.font='40px '+PF;sub.forEach((t,i)=>x.fillText(t,PW/2,PH-250+i*62));return cv}
+async function pdfBook(){const J=window.jspdf&&window.jspdf.jsPDF;if(!J){msg('PDF 元件未載入（需要連網）。');return}
+  const L=S.novel||[],h=S.hero||{name:'張三'},SC=.6,pm=100,pg=[];let cv=null,cx,y,chs=[],curN=0;msg('魅兒：正在排版摺頁小冊…');
+  const fin=()=>{if(cv)pg.push({u:cv.toDataURL('image/jpeg',.9),ch:chs})};
+  const np=()=>{fin();cv=document.createElement('canvas');cv.width=Math.round(PW*SC);cv.height=Math.round(PH*SC);cx=cv.getContext('2d');cx.scale(SC,SC);cx.fillStyle='#f6f0e0';cx.fillRect(0,0,PW,PH);chs=curN?[curN]:[];y=pm+30};
+  const put=(t,f,lh,col,gap)=>{cx.font=f;cx.fillStyle=col;const ln=[];let a='';for(const ch of t){if(cx.measureText(a+ch).width>PW-2*pm&&a){ln.push(a);a=ch}else a+=ch}if(a)ln.push(a);for(const l of ln){if(y+lh>PH-pm-30){np();cx.font=f;cx.fillStyle=col}cx.fillText(l,pm,y);y+=lh}y+=gap};
+  np();
+  for(const c of L){curN=c.n;if(y>PH-pm-320)np();if(!chs.includes(curN))chs.push(curN);
+    put('第 '+c.n+' 集：'+c.title,'bold 50px '+PF,84,'#2f7d6b',4);put('星球：'+(c.planet||'未知')+'｜境界：'+(c.realm||'—')+'｜'+(c.date||'—'),'28px '+PF,46,'#8a8372',20);
+    c.text.split(/\n+/).forEach(t=>put(t,'38px '+PF,62,'#1d2a24',18));y+=36}
+  fin();
+  const note=()=>{const c=document.createElement('canvas');c.width=Math.round(PW*SC);c.height=Math.round(PH*SC);const x=c.getContext('2d');x.scale(SC,SC);x.fillStyle='#f6f0e0';x.fillRect(0,0,PW,PH);x.fillStyle='#8a8372';x.font='bold 46px '+PF;x.fillText('— 筆記 —',pm,pm+50);x.strokeStyle='#cfc7b0';x.lineWidth=2;for(let i=0;i<20;i++){x.beginPath();x.moveTo(pm,pm+150+i*68);x.lineTo(PW-pm,pm+150+i*68);x.stroke()}return{u:c.toDataURL('image/jpeg',.9),ch:[]}};
+  const V=Math.max(1,Math.ceil(pg.length/6)),pool=[],pick=()=>{if(!pool.length)pool.push(...SH);return pool.length?pool.splice(Math.floor(Math.random()*pool.length),1)[0]:null};
+  const QW=Math.round(PW*SC*2),QH=Math.round(PH*SC*2),pw=QW/2,ph=QH/2,sheets=[];
+  const blank=()=>{const c=document.createElement('canvas');c.width=QW;c.height=QH;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,QW,QH);return c};
+  {const c=blank(),x=c.getContext('2d');x.fillStyle='#1d2a24';x.font='bold 60px '+PF;x.fillText('摺頁小冊說明',100,200);x.font='36px '+PF;['共 '+V+' 本，每本一張 A4（正反兩面，PDF 各兩頁）。','列印：A4、實際大小、雙面列印、沿長邊翻頁。','每本的兩面對齊後：先沿橫向中線對折（上折向下），','再沿直向中線對折（左折向右）。','用美工刀沿上緣折邊劃開（只劃上緣），','即成 8 頁小書，封面在最上面。'].forEach((t,i)=>x.fillText(t,100,320+i*80));sheets.push(c.toDataURL('image/jpeg',.82),blank().toDataURL('image/jpeg',.82))}
+  for(let v=0;v<V;v++){const ps=pg.slice(v*6,v*6+6);while(ps.length<6)ps.push(note());
+    const nums=ps.flatMap(q=>q.ch),lo=nums.length?Math.min(...nums):0,hi=nums.length?Math.max(...nums):0;
+    const front=await coverPg('浮槎紀',['卷 '+(v+1)+' / '+V+(nums.length?'・第 '+lo+(hi>lo?'–'+hi:'')+' 集':''),h.name+' 的星海旅程'],pick()),back=await coverPg('— 卷終 —',['吸星劍・'+SW[S.sw||0],'境界・'+REALM[lvl()]],pick());
+    const im=await Promise.all(ps.map(q=>li(q.u))),P={1:front,8:back};im.forEach((m,i)=>{P[i+2]=m});
+    const mk=lay=>{const c=blank(),x=c.getContext('2d');lay.forEach((row,r)=>row.forEach((n,k)=>{x.save();x.translate(k*pw+pw/2,r*ph+ph/2);if(r==0)x.rotate(Math.PI);if(P[n])x.drawImage(P[n],-pw/2,-ph/2,pw,ph);if(n>1&&n<8){x.fillStyle='#8a8372';x.font='24px '+PF;x.textAlign='center';x.fillText('— '+n+' —',0,ph/2-24)}x.restore()}));x.strokeStyle='rgba(120,120,120,.4)';x.setLineDash([10,10]);x.lineWidth=2;x.beginPath();x.moveTo(pw,0);x.lineTo(pw,QH);x.moveTo(0,ph);x.lineTo(QW,ph);x.stroke();return c.toDataURL('image/jpeg',.82)};
+    sheets.push(mk([[3,6],[2,7]]),mk([[5,4],[8,1]]))}
+  const doc=new J({unit:'mm',format:'a4',compress:true});sheets.forEach((u,i)=>{if(i)doc.addPage();doc.addImage(u,'JPEG',0,0,210,297)});
+  await saveF('浮槎紀摺頁小冊.pdf',doc.output('blob'));msg('魅兒：共 '+V+' 本摺頁小冊，PDF 已準備好。')}
+const fxc=$('fx'),fcx=fxc.getContext('2d'),PAL=['#ffffff','#7ee0c0','#6fb8ff','#f0c668','#ff9a4a','#ff7ad9','#b58cff','#fff27a','#ffffff'];let fw=0,fh=0;
+function drawFx(t){const W=innerWidth,H=innerHeight,D=Math.min(devicePixelRatio,2);if(fw!=W||fh!=H){fw=W;fh=H;fxc.width=W*D;fxc.height=H*D;fxc.style.width=W+'px';fxc.style.height=H+'px'}
+  const c=fcx;c.setTransform(D,0,0,D,0,0);c.clearRect(0,0,W,H);
+  const v=new THREE.Vector3(P.x,P.y+1,P.z).project(cam),l=lvl(),s=Math.min(W,H)/9,col=PAL[l];c.save();c.translate((v.x+1)/2*W,(1-v.y)/2*H);
+  const fl=S.fl||1,fr=s*(.12+fl*.04)*(1+Math.sin(t/110)*.15),pg=c.createRadialGradient(-s*.45,-s*.1,0,-s*.45,-s*.1,fr*2.2);pg.addColorStop(0,'#e0a8ff');pg.addColorStop(.5,'#9a3cff99');pg.addColorStop(1,'#9a3cff00');c.fillStyle=pg;c.beginPath();c.arc(-s*.45,-s*.1,fr*2.2,0,6.283);c.fill();c.restore()}
+build(1,true);requestAnimationFrame(loop);if(!S.hero)create();else{setHero();mei('歡迎回來，'+S.hero.name+'！點我可查看提示。')}
+</script>
+<script>
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+let dip=null;
+document.getElementById('inst').onclick=async()=>{if(!dip)return;dip.prompt();try{await dip.userChoice}catch(e){}dip=null;document.getElementById('inst').style.display='none'};
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;const b=document.getElementById('inst');if(b)b.style.display=''});
+addEventListener('appinstalled',()=>{dip=null;const b=document.getElementById('inst');if(b)b.style.display='none'});
+</script>
+</body>
+</html>

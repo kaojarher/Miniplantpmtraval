@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d2230">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="浮槎紀">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>浮槎紀・原型</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -48,13 +56,14 @@ button:active{background:var(--jade);color:var(--bg)}
 <body>
 <canvas id="c"></canvas>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
 <canvas id="fx" style="position:fixed;inset:0;pointer-events:none"></canvas>
 <div class="p" id="card"></div>
 <div class="p" id="st"></div>
 <div class="p" id="q"></div>
 <div class="p" id="arrow"><div id="ai">▲</div><div id="ad"></div></div>
 <div class="p" id="fu"></div>
-<div class="p" id="go"><button id="daily">每日挑戰</button><button id="jr">手札</button><button id="nv">小說</button><button id="yard">練製</button><button id="mu">音效：開</button><button id="sail">解纜・前往下一顆星</button></div>
+<div class="p" id="go"><button id="daily">每日挑戰</button><button id="jr">手札</button><button id="nv">小說</button><button id="yard">練製</button><button id="mu">音效：開</button><button id="inst" style="display:none">安裝</button><button id="sail">解纜・前往下一顆星</button></div>
 <div id="mei"><button id="mb" aria-label="魅兒導覽">🧚</button><div class="p" id="mt"></div></div>
 <div class="p" id="dlg"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -396,20 +405,30 @@ function fbChap(n,h,inf,ev,pn){const a=[],nm=h.name,pr=h.g?'她':'他';
   if(pn!='無')a.push('同行的'+pn+'默默相伴，一行人未曾言退。');
   a.push('離開時，'+inf.name+'漸遠。'+nm+'望著境界「'+REALM[lvl()]+'」的靈光，知道前路仍遠。');
   return{title:inf.name+'行',text:a.join('\n\n')}}
+async function getSampler(){
+  try{if(window.claude){const sm=await window.claude.use('sample');if(sm)return sm}}catch(e){}
+  if(!window.puter)return null;
+  return async(prompt)=>{
+    try{if(!puter.auth.isSignedIn())await puter.auth.signIn()}catch(e){throw e}
+    const r=await puter.ai.chat(prompt,{model:'claude-sonnet-4-5'});
+    const t=typeof r==='string'?r:(r&&r.message&&r.message.content&&r.message.content[0]&&r.message.content[0].text)||(r&&r.text)||(r&&r.message&&typeof r.message.content==='string'&&r.message.content)||'';
+    return{text:t}}}
 async function writeChap(inf,ev){
   const L=S.novel=S.novel||[],n=L.length+1,h=S.hero||{g:0,name:'張三'},pn=(S.party||[]).map(k=>NPC[k][0]).join('、')||'無',pv=L[L.length-1];
   msg('魅兒：正在把這段旅程寫成小說…');
   const facts='主角：'+h.name+'（'+(h.g?'女':'男')+'）；境界：'+REALM[lvl()]+'；吸星劍：'+SW[S.sw||0]+'；紫焰心：'+FL[S.fl||1]+'；隊友：'+pn+'\n星球：'+inf.name+'（地貌'+N.land[inf.land]+'，靈氣'+N.aura[inf.aura]+'，危機'+N.crisis[inf.crisis]+'，委託人身分'+NPC[inf.power][0]+'）\n事件：擊退妖獸 '+(ev.beast||0)+' 隻；討伐灰衣邪修 '+(ev.evil||0)+' 名；煉製武器 '+(ev.forgeW||0)+' 次、護具 '+(ev.forgeA||0)+' 次、丹藥 '+(ev.alch||0)+' 次、符籙道具 '+(ev.craft||0)+' 次、淬煉吸星劍 '+(ev.sword||0)+' 次；主線靈材'+(ev.done?'已採齊':'未完成')+'；危機'+(ev.crisisOk?'已化解':'未化解')+'；渡口'+(ev.fixed?'已修復':'未修復')+'；完成的居民委託：'+((ev.qd||[]).join('、')||'無');
   let r=null;
-  try{const sm=window.claude&&await window.claude.use('sample');if(sm){const o=await sm('你是修真長篇小說作者，文風飄逸、節奏明快。請依下列遊戲紀錄寫「第 '+n+' 集」，繁體中文，650 到 900 字，內容原創，不得使用任何現有小說的角色名與專有設定。第一行是標題（不加符號與集數），空一行後是正文，並自然融入所有事件、與前情銜接。\n【前情】'+(pv?'第 '+pv.n+' 集《'+pv.title+'》：'+pv.text.slice(0,200):'（開篇）')+'\n【本集紀錄】\n'+facts,{modelTier:'default',cache:false});const t=(o.text||'').trim().split('\n');const ti=t[0].replace(/^[#\s第\d集：:・\-]+/,'').slice(0,24),bd=t.slice(1).join('\n').trim();if(bd.length>150)r={title:ti||('第 '+n+' 集'),text:bd}}}catch(e){}
+  try{const sm=await getSampler();if(sm){const o=await sm('你是修真長篇小說作者，文風飄逸、節奏明快。請依下列遊戲紀錄寫「第 '+n+' 集」，繁體中文，650 到 900 字，內容原創，不得使用任何現有小說的角色名與專有設定。第一行是標題（不加符號與集數），空一行後是正文，並自然融入所有事件、與前情銜接。\n【前情】'+(pv?'第 '+pv.n+' 集《'+pv.title+'》：'+pv.text.slice(0,200):'（開篇）')+'\n【本集紀錄】\n'+facts,{modelTier:'default',cache:false});const t=(o.text||'').trim().split('\n');const ti=t[0].replace(/^[#\s第\d集：:・\-]+/,'').slice(0,24),bd=t.slice(1).join('\n').trim();if(bd.length>150)r={title:ti||('第 '+n+' 集'),text:bd}}}catch(e){}
   if(!r)r=fbChap(n,h,inf,ev,pn);
   L.push({n,title:r.title,text:r.text,planet:inf.name,realm:REALM[lvl()],date:new Date().toISOString().slice(0,10)});S.novel=L;save();msg('魅兒：第 '+n+' 集《'+r.title+'》已寫入小說。')}
 let rdN=0;
 function reader(i){const L=S.novel||[];if(!L.length){dlg('尚無章節。每離開一顆星球，魅兒就會把這段旅程寫成一集。',[['關閉',shut]]);return}
   rdN=i==null?L.length-1:Math.max(0,Math.min(L.length-1,i));const c=L[rdN];
   dlg('<b>第 '+c.n+' 集：'+esc(c.title)+'</b>（'+(rdN+1)+'/'+L.length+'）<div style="max-height:46vh;overflow-y:auto;white-space:pre-wrap;line-height:1.8;margin-top:8px;font-size:14px;user-select:text;-webkit-user-select:text">'+esc(c.text)+'</div>',[['上一集',()=>reader(rdN-1)],['下一集',()=>reader(rdN+1)],['匯出',exportMenu],['關閉',shut]])}
-async function dlNovel(){try{const d=await window.claude.use('downloads');if(!d){msg('此環境不支援下載。');return}await d.save({filename:'浮槎紀小說.txt',data:(S.novel||[]).map(c=>'第 '+c.n+' 集　'+c.title+'\n\n'+c.text).join('\n\n————\n\n')})}catch(e){}}
-$('nv').onclick=()=>{if(!busy)reader()};
+async function dlNovel(){await saveF('浮槎紀小說.txt',(S.novel||[]).map(c=>'第 '+c.n+' 集　'+c.title+'\n\n'+c.text).join('\n\n————\n\n'))}
+$('nv').onclick=()=>{
+  try{if(window.puter&&!window.claude&&!puter.auth.isSignedIn())puter.auth.signIn().catch(()=>{})}catch(e){}
+  if(!busy)reader()};
 
 let wantSnap=false,snapT=12,SH=[];try{SH=JSON.parse(localStorage.getItem('xzp_shots')||'[]')}catch(e){}
 function snap(){wantSnap=false;try{const c=document.createElement('canvas'),r=renderer.domElement,w=960,h=Math.round(w*r.height/r.width);c.width=w;c.height=h;c.getContext('2d').drawImage(r,0,0,w,h);SH.push(c.toDataURL('image/jpeg',.7));if(SH.length>8)SH.splice(Math.floor(Math.random()*SH.length),1);try{localStorage.setItem('xzp_shots',JSON.stringify(SH))}catch(e){SH.splice(0,3)}}catch(e){}}
@@ -419,7 +438,12 @@ function ebookHtml(){const L=S.novel||[],h=S.hero||{name:'張三'},img=SH.length
   const toc=L.map(c=>'<li><a href="#c'+c.n+'">第 '+c.n+' 集：'+esc(c.title)+'</a></li>').join(''),
   body=L.map(c=>'<article id="c'+c.n+'"><h2>第 '+c.n+' 集：'+esc(c.title)+'</h2><p class="meta">星球：'+esc(c.planet||'未知')+'｜境界：'+esc(c.realm||'—')+'｜'+esc(c.date||'—')+'</p>'+esc(c.text).split(/\n+/).map(t=>'<p>'+t+'</p>').join('')+'</article>').join('');
   return '<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>浮槎紀</title><style>:root{--bg:#f6f0e0;--fg:#1d2a24;--ac:#2f7d6b}@media(prefers-color-scheme:dark){:root{--bg:#10171a;--fg:#e8efe5;--ac:#6fd3b8}}body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.9 "Noto Serif TC","Songti TC","PMingLiU",serif}main{max-width:36em;margin:0 auto;padding:0 1.2em 4em}header img{width:100%;max-height:50vh;object-fit:cover;display:block}h1{margin:.6em 0 .2em;font-size:2em}h2{color:var(--ac);margin-top:2.4em;border-top:1px solid #8884;padding-top:1em}nav a{color:var(--ac)}p{text-indent:2em;margin:.6em 0}p.meta{text-indent:0;font-size:.8em;opacity:.7}@media print{header img{max-height:30vh}}</style></head><body><header>'+(img?'<img alt="" src="'+img+'">':'')+'</header><main><h1>浮槎紀</h1><p class="meta">主角：'+esc(h.name)+'｜共 '+L.length+' 集</p><nav><ol>'+toc+'</ol></nav>'+body+'</main></body></html>'}
-async function saveF(name,data){try{const d=await window.claude.use('downloads');if(!d){msg('此環境不支援下載。');return}await d.save({filename:name,data})}catch(e){}}
+async function saveF(name,data){
+  try{const d=window.claude&&await window.claude.use('downloads');if(d){await d.save({filename:name,data});return}}catch(e){}
+  const b=data instanceof Blob?data:new Blob([data],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 function exportMenu(){if(!(S.novel||[]).length){msg('尚無章節可匯出。');return}dlg('<b>匯出小說</b><br><span style="color:var(--dim)">章節固定格式：「## 第 N 集：標題」，附星球、境界、日期。</span>',[['1. 純 MD 檔',()=>saveF('浮槎紀.md',bookMd())],['2. HTML 電子書',()=>saveF('浮槎紀電子書.html',ebookHtml())],['3. A4 摺頁小冊 PDF（一張紙折成 8 頁）',pdfBook],['返回',()=>reader(rdN)]])}
 const li=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
 const PW=1240,PH=1754,PM=120,PF='"Noto Serif TC","Songti TC","PMingLiU",serif';
@@ -456,6 +480,15 @@ function drawFx(t){const W=innerWidth,H=innerHeight,D=Math.min(devicePixelRatio,
   const v=new THREE.Vector3(P.x,P.y+1,P.z).project(cam),l=lvl(),s=Math.min(W,H)/9,col=PAL[l];c.save();c.translate((v.x+1)/2*W,(1-v.y)/2*H);
   const fl=S.fl||1,fr=s*(.12+fl*.04)*(1+Math.sin(t/110)*.15),pg=c.createRadialGradient(-s*.45,-s*.1,0,-s*.45,-s*.1,fr*2.2);pg.addColorStop(0,'#e0a8ff');pg.addColorStop(.5,'#9a3cff99');pg.addColorStop(1,'#9a3cff00');c.fillStyle=pg;c.beginPath();c.arc(-s*.45,-s*.1,fr*2.2,0,6.283);c.fill();c.restore()}
 build(1,true);requestAnimationFrame(loop);if(!S.hero)create();else{setHero();mei('歡迎回來，'+S.hero.name+'！點我可查看提示。')}
+</script>
+<script>
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+let dip=null;
+document.getElementById('inst').onclick=async()=>{if(!dip)return;dip.prompt();try{await dip.userChoice}catch(e){}dip=null;document.getElementById('inst').style.display='none'};
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;const b=document.getElementById('inst');if(b)b.style.display=''});
+addEventListener('appinstalled',()=>{dip=null;const b=document.getElementById('inst');if(b)b.style.display='none'});
 </script>
 </body>
 </html>
